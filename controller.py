@@ -95,10 +95,10 @@ class Controller:
                             if parsed_message[0] == "ADT^A01":
                                 mrn = parsed_message[2][0]["mrn"]
                                 name = parsed_message[2][0]["name"]
-                                dob = parsed_message[2][0]["dob"]
+                                age = parsed_message[2][0]["age"]
                                 sex = parsed_message[2][0]['sex']
 
-                                self.model.add_patient(mrn, dob, sex)
+                                self.model.add_patient(mrn, age, sex)
                                 logging.info(f"Patient {name} with MRN {mrn} added to the database")
 
                             ack_message = self.parser.generate_hl7_ack(hl7_message)
