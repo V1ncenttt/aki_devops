@@ -1,31 +1,33 @@
-"""_summary_
-"""
-
 import asyncio
 import requests
 import logging
 import socket
 import datetime
+from concurrent.futures import ThreadPoolExecutor  # ✅ Add thread pool
 from model import Model
 from parser import HL7Parser
 
-
 SIMULATOR_HOST = "127.0.0.1"
 SIMULATOR_PORT = 8440
+
 # MLLP Delimiters
-START_BLOCK = b"\x0b"  # VT (Vertical Tab)
-END_BLOCK = b"\x1c\r"  # FS (File Separator) + Carriage Return
+START_BLOCK = b"\x0b"
+END_BLOCK = b"\x1c\r"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+#TODO: Add docstrings to the Controller class
+#TODO: Make sure failures are handled properly, especially don't re-add measurements if the model fails
 class Controller:
-    """_summary_"""
+    """HL7 Listener & Worker Controller"""
 
     def __init__(self, model):
-        """_summary_"""
         self.model = model
         self.pager_url = "http://localhost:8441/page"
         self.worker_queue = asyncio.Queue()
         self.parser = HL7Parser()
+
+        # ✅ Thread pool for parallel worker execution
+        self.executor = ThreadPoolExecutor(max_workers=5)
 
     @staticmethod
     def generate_hl7_ack(message: str) -> bytes:
@@ -44,37 +46,34 @@ class Controller:
 
         return START_BLOCK + hl7_ack.encode("utf-8") + END_BLOCK
 
-    async def worker(self, worker_id):
+    async def worker_manager(self):
+        """Manages worker threads and assigns tasks from the queue."""
         while True:
             mrn, creatinine_value, test_time = await self.worker_queue.get()
 
-            try:
-                if creatinine_value is None:
-                    logging.warning(
-                        f"[WORKER {worker_id}] No creatinine value for Patient {mrn}. Skipping."
-                    )
-                    continue
+            
+            asyncio.create_task(self.run_worker(mrn, creatinine_value, test_time))
 
-                alert_needed = await self.model.predict_aki(mrn, creatinine_value)
+    async def run_worker(self, mrn, creatinine_value, test_time):
+        """Runs a worker in a background thread using ThreadPoolExecutor."""
+        loop = asyncio.get_running_loop()
+        #TODO: Get past measurements from the model before processing the patient
+        result = await loop.run_in_executor(self.executor, self.process_patient, mrn, creatinine_value, test_time)
+        
+        if result:
+            await self.send_pager_alert(mrn, test_time)
 
+        await loop.run_in_executor(self.executor, self.model.add_measurement, mrn, creatinine_value, test_time)
 
-                if alert_needed:
-                    await self.send_pager_alert(mrn, test_time)
-                
-                await self.model.add_measurement(mrn, creatinine_value, test_time) #Add the measurement to the database
-
-            except Exception as e:
-                logging.error(
-                    f"[WORKER {worker_id}] Failed processing Patient {mrn}: {e}"
-                )
-
-            self.worker_queue.task_done()
+    def process_patient(self, mrn, creatinine_value, test_time):
+        """Runs ML model synchronously inside a worker thread."""
+        logging.info(f"[WORKER] Processing Patient {mrn} at {test_time}...")
+        alert_needed = self.model.predict_aki(mrn, creatinine_value)
+        return alert_needed
 
     async def hl7_listen(self):
         """Listen for HL7 messages, process them, and assign workers."""
-        logging.info(
-            f"[*] Connecting to HL7 Simulator at {SIMULATOR_HOST}:{SIMULATOR_PORT}..."
-        )
+        logging.info(f"[*] Connecting to HL7 Simulator at {SIMULATOR_HOST}:{SIMULATOR_PORT}...")
 
         while True:
             try:
@@ -97,24 +96,18 @@ class Controller:
                         while START_BLOCK in buffer and END_BLOCK in buffer:
                             start_index = buffer.index(START_BLOCK) + 1
                             end_index = buffer.index(END_BLOCK)
-                            hl7_message = (
-                                buffer[start_index:end_index].decode("utf-8").strip()
-                            )
+                            hl7_message = buffer[start_index:end_index].decode("utf-8").strip()
                             buffer = buffer[end_index + len(END_BLOCK) :]
 
-                            
-
                             parsed_message = self.parser.parse(hl7_message)
-                            if parsed_message[0] == "ORU^R01":
 
+                            if parsed_message[0] == "ORU^R01":
                                 mrn = parsed_message[2][0]["mrn"]
                                 creatinine_value = parsed_message[2][0]["test_value"]
                                 test_time = parsed_message[2][0]["test_time"]
 
                                 logging.info(f"Patient {mrn} has creatinine value {creatinine_value} at {test_time}")
-                                await self.worker_queue.put(
-                                    (mrn, creatinine_value, test_time)
-                                )
+                                await self.worker_queue.put((mrn, creatinine_value, test_time))
                                 await asyncio.sleep(0)  # Yield control to event loop
 
                             ack_message = self.generate_hl7_ack(hl7_message)
@@ -130,33 +123,11 @@ class Controller:
                 await asyncio.sleep(1)
 
             except (ConnectionRefusedError, ConnectionResetError):
-                logging.error(
-                    f"[-] Could not connect to {SIMULATOR_HOST}:{SIMULATOR_PORT}, retrying in 5s..."
-                )
+                logging.error(f"[-] Could not connect to {SIMULATOR_HOST}:{SIMULATOR_PORT}, retrying in 5s...")
                 await asyncio.sleep(1)
 
-    async def supervise(self):
-        """Monitors workers and restarts them if they fail."""
-
-        worker_tasks = {asyncio.create_task(self.worker(i)): i for i in range(5)}
-
-        while True:
-            done, _ = await asyncio.wait(
-                worker_tasks.keys(), return_when=asyncio.FIRST_COMPLETED
-            )
-            for task in done:
-                worker_id = worker_tasks[task]
-                worker_tasks.pop(task)
-                worker_tasks[asyncio.create_task(self.worker(worker_id))] = worker_id
-
     async def send_pager_alert(self, mrn, timestamp):
-        """_summary_
-
-        Args:
-            mrn (_type_): _description_
-            timestamp (_type_): _description_
-        """
-        # Convert timestamp to string with just numbers: '2024-01-20 22:34' becomes 202401202243 (YYYYMMDDHHMMSS)
+        """Send a pager alert asynchronously."""
         timestamp = timestamp.replace("-", "").replace(" ", "").replace(":", "").replace('T', '').split('.')[0]
 
         logging.info(f"[*] Sending pager alert for Patient {mrn} at {timestamp}...")
@@ -168,20 +139,17 @@ class Controller:
                 response = requests.post(self.pager_url, data=content, timeout=5)
                 response.raise_for_status()
                 return
-
             except requests.RequestException as e:
+                logging.warning(f"[ALERT FAILED] Retrying... {e}")
                 await asyncio.sleep(0.1)  # Wait before retrying
 
-
-# Main function of the system
+# ✅ Main function with threaded workers
 async def main():
     model = Model("history.csv")
-
     controller = Controller(model)
 
-    asyncio.create_task(controller.supervise())
-    await controller.hl7_listen()
-
+    asyncio.create_task(controller.worker_manager())  # ✅ Start worker manager
+    await controller.hl7_listen()  # ✅ Run HL7 listener
 
 if __name__ == "__main__":
     asyncio.run(main())
