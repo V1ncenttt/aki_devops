@@ -1,5 +1,9 @@
 from datetime import datetime
 
+# MLLP Delimiters
+START_BLOCK = b"\x0b"
+END_BLOCK = b"\x1c\r"
+
 class HL7Parser:
     """
    This class is responsible for parsing the incoming messages. Different returns will be produced based on the message type. It can be reused multiple times with different messages.
@@ -80,6 +84,23 @@ class HL7Parser:
                 "test_value": test_value,
                 "test_time": self.test_timestamp
             })
+    
+    @staticmethod
+    def generate_hl7_ack(message: str) -> bytes:
+        """Generate an HL7 ACK message."""
+        msg_control_id = "UNKNOWN"
+        segments = message.split("\r")
+
+        for segment in segments:
+            if segment.startswith("MSH"):
+                parts = segment.split("|")
+                if len(parts) > 9:
+                    msg_control_id = parts[9]
+
+        timestamp = datetime.datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        hl7_ack = f"MSH|^~\\&|||||{timestamp}||ACK^R01|{msg_control_id}|2.5\rMSA|AA|{msg_control_id}\r"
+
+        return START_BLOCK + hl7_ack.encode("utf-8") + END_BLOCK
     
     def _generate_output(self): 
         """Generate the parsed output based on message type."""

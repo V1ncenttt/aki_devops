@@ -5,14 +5,12 @@ import socket
 import datetime
 from concurrent.futures import ThreadPoolExecutor  # ✅ Add thread pool
 from model import Model
-from parser import HL7Parser
+from parser import HL7Parser, START_BLOCK, END_BLOCK
 
 SIMULATOR_HOST = "127.0.0.1"
 SIMULATOR_PORT = 8440
 
-# MLLP Delimiters
-START_BLOCK = b"\x0b"
-END_BLOCK = b"\x1c\r"
+
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 #TODO: Add docstrings to the Controller class
@@ -25,26 +23,9 @@ class Controller:
         self.pager_url = "http://localhost:8441/page"
         self.worker_queue = asyncio.Queue()
         self.parser = HL7Parser()
-
-        # ✅ Thread pool for parallel worker execution
         self.executor = ThreadPoolExecutor(max_workers=5)
 
-    @staticmethod
-    def generate_hl7_ack(message: str) -> bytes:
-        """Generate an HL7 ACK message."""
-        msg_control_id = "UNKNOWN"
-        segments = message.split("\r")
 
-        for segment in segments:
-            if segment.startswith("MSH"):
-                parts = segment.split("|")
-                if len(parts) > 9:
-                    msg_control_id = parts[9]
-
-        timestamp = datetime.datetime.utcnow().strftime("%Y%m%d%H%M%S")
-        hl7_ack = f"MSH|^~\\&|||||{timestamp}||ACK^R01|{msg_control_id}|2.5\rMSA|AA|{msg_control_id}\r"
-
-        return START_BLOCK + hl7_ack.encode("utf-8") + END_BLOCK
 
     async def worker_manager(self):
         """Manages worker threads and assigns tasks from the queue."""
@@ -110,7 +91,7 @@ class Controller:
                                 await self.worker_queue.put((mrn, creatinine_value, test_time))
                                 await asyncio.sleep(0)  # Yield control to event loop
 
-                            ack_message = self.generate_hl7_ack(hl7_message)
+                            ack_message = self.parser.generate_hl7_ack(hl7_message)
                             client_socket.sendall(ack_message)
                             logging.info(f"[ACK SENT]")
 
@@ -143,7 +124,7 @@ class Controller:
                 logging.warning(f"[ALERT FAILED] Retrying... {e}")
                 await asyncio.sleep(0.1)  # Wait before retrying
 
-# ✅ Main function with threaded workers
+
 async def main():
     model = Model("history.csv")
     controller = Controller(model)
