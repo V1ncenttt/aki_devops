@@ -1,0 +1,33 @@
+services:
+  message-simulator:
+    build:
+      context: .
+      dockerfile: Dockerfile.simulator
+    container_name: message_sim
+    networks:
+      - my_network
+    depends_on:
+      - aki-system
+    ports:
+      - "8440:8440"
+      - "8441:8441"
+    logging:
+      driver: "local"
+    volumes:
+      - ./logs/simulator.log:/var/log/simulator.log
+
+  aki-system:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aki-system
+    networks:
+      - my_network
+    logging:
+      driver: "local"
+    volumes:
+      - ./logs/aki-system.log:/var/log/aki-system.log
+
+networks:
+  my_network:
+    driver: bridge
