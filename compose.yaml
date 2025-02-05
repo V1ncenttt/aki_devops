@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   message-simulator:
     build:
@@ -25,9 +23,6 @@ services:
     container_name: aki-system
     networks:
       - my_network
-    ports:
-      - "8440:8440"
-      - "8441:8441"
     logging:
       driver: "local"
     volumes:

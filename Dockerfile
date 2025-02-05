@@ -6,15 +6,18 @@ ENV PAGER_ADDRESS=8441
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -yq install python3-pip python3-venv
 
-COPY main.py /aki-system
-COPY parser.py /aki-system
-COPY controller.py /aki-system
-COPY model.py /aki-system
+COPY main.py /aki-system/
+COPY parser.py /aki-system/
+COPY controller.py /aki-system/
+COPY model.py /aki-system/
+COPY client.py /aki-system/
 WORKDIR /aki-system
 
+# Install dependencies
 RUN python3 -m venv /aki-system
+RUN /aki-system/bin/pip install --no-cache-dir requests
 
 EXPOSE 8440
 EXPOSE 8441
 
-ENTRYPOINT ["/simulator/bin/python3", "/aki-system/main.py"]
+ENTRYPOINT ["/aki-system/bin/python3", "/aki-system/client.py"]
