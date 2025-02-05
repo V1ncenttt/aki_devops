@@ -28,6 +28,7 @@ class DictDatabase:
             # Process each row
             for row in reader:
                 mrn = int(row[0])  # First column is MRN
+                
                 measurements = []
 
                 # Iterate through pairs of (creatinine_result_X, creatinine_date_X)
@@ -39,7 +40,7 @@ class DictDatabase:
                         measurements.append((float(result), date))  # Convert result to float
                 
                 # Store in dictionary
-                self.dict_database[mrn] = measurements
+                self.dict_database[mrn] = [{'age': None, 'sex': None}, measurements]
         
 
     async def get_data(self, mrn):
@@ -52,7 +53,36 @@ class DictDatabase:
             _type_: _description_
         """
         async with self.lock:
-            return self.dict_database.get(mrn, []) #Prevents KeyError
+            patient_data =  self.dict_database.get(mrn, []) #Prevents KeyError
+            age = patient_data[0]['age']
+            sex = patient_data[0]['sex']    
+
+            if age is None:
+                age = 30
+            if sex is None:
+                sex = 0
+            
+            vector = [age, sex]
+            for data in patient_data[1]:
+                vector.append(data[0])
+                vector.append(data[1])
+
+            return vector
+
+        
+    async def add_patient(self, mrn, age=None, sex=None):
+        """_summary_
+
+        Args:
+            mrn (_type_): _description_
+            age (_type_, optional): _description_. Defaults to None.
+        """
+        async with self.lock:
+            if mrn not in self.dict_database:
+                self.dict_database[mrn] = [{'age': age, 'sex':sex}, []]
+            else:
+                self.dict_database[mrn][0]['age'] = age
+                self.dict_database[mrn][0]['sex'] = sex
 
     async def add_data(self, mrn, data):
         """_summary_
@@ -66,9 +96,4 @@ class DictDatabase:
 
 
 
-if __name__ == "__main__":
-    db = DictDatabase("history.csv")
-    print(db.get_data(189386394))
-    db.add_data(1893806394, (1.2, "2021-03-01"))
-    print(db.get_data(1893806394))
    

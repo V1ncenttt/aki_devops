@@ -38,7 +38,6 @@ class Controller:
     async def run_worker(self, mrn, creatinine_value, test_time):
         """Runs a worker in a background thread using ThreadPoolExecutor."""
         loop = asyncio.get_running_loop()
-        #TODO: Get past measurements from the model before processing the patient
         result = await loop.run_in_executor(self.executor, self.process_patient, mrn, creatinine_value, test_time)
         
         if result:
@@ -49,7 +48,8 @@ class Controller:
     def process_patient(self, mrn, creatinine_value, test_time):
         """Runs ML model synchronously inside a worker thread."""
         logging.info(f"[WORKER] Processing Patient {mrn} at {test_time}...")
-        alert_needed = self.model.predict_aki(mrn, creatinine_value)
+        patient_vector = self.model.get_past_measurements(mrn, creatinine_value, test_time)
+        alert_needed = self.model.predict_aki(mrn, patient_vector)
         return alert_needed
 
     async def hl7_listen(self):
@@ -91,6 +91,16 @@ class Controller:
                                 await self.worker_queue.put((mrn, creatinine_value, test_time))
                                 await asyncio.sleep(0)  # Yield control to event loop
 
+                            #In case of patient admission
+                            if parsed_message[0] == "ADT^A01":
+                                mrn = parsed_message[2][0]["mrn"]
+                                name = parsed_message[2][0]["name"]
+                                dob = parsed_message[2][0]["dob"]
+                                sex = parsed_message[2][0]['sex']
+
+                                self.model.add_patient(mrn, dob, sex)
+                                logging.info(f"Patient {name} with MRN {mrn} added to the database")
+
                             ack_message = self.parser.generate_hl7_ack(hl7_message)
                             client_socket.sendall(ack_message)
                             logging.info(f"[ACK SENT]")
@@ -101,6 +111,8 @@ class Controller:
 
                 client_socket.close()
                 logging.info("[*] Connection closed. Waiting 5s before reconnecting...")
+                #TODO: Change exit to retry in the future
+                exit(0)
                 await asyncio.sleep(1)
 
             except (ConnectionRefusedError, ConnectionResetError):

@@ -55,7 +55,7 @@ class Model:
         """
         return self.database.add_data(mrn, (measurement, test_date))
     
-    def get_past_measurements(self, mrn):
+    async def get_past_measurements(self, mrn, creatinine_value, test_time):
         """_summary_
 
         Args:
@@ -64,9 +64,24 @@ class Model:
         Returns:
             _type_: _description_
         """
-        return self.database.get_data(mrn)
+        patient_vector = self.database.get_data(mrn)
+        patient_vector += [test_time, creatinine_value]
+
+        #Pad with 0s if needed
+        #TODO: use your preprocessing method
+        if len(patient_vector) < self.expected_columns_len:
+            patient_vector += [0] * (self.expected_columns_len - len(patient_vector))
+        #Convert to tensor
+        return torch.tensor(patient_vector, dtype=torch.float32)
     
-        
+    def add_patient(self, mrn, age=None, sex=None):
+        """_summary_
+
+        Args:
+            mrn (_type_): _description_
+            age (_type_, optional): _description_. Defaults to None.
+        """
+        return self.database.add_patient(mrn, age,sex)
         
         
     def test_preprocessing(self, filepath, expected_columns):
@@ -134,7 +149,7 @@ class Model:
 
         return X_tensor, y
 
-    def predict_aki(self, mrn, measurements):
+    def predict_aki(self, measurement_vector):
 
         """
          Args:
