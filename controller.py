@@ -16,7 +16,7 @@ SIMULATOR_PORT = 8440
 START_BLOCK = b"\x0b"  # VT (Vertical Tab)
 END_BLOCK = b"\x1c\r"  # FS (File Separator) + Carriage Return
 
-
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 class Controller:
     """_summary_"""
 
@@ -99,21 +99,24 @@ class Controller:
                             )
                             buffer = buffer[end_index + len(END_BLOCK) :]
 
-                            logging.info(f"[HL7 MESSAGE]:\n{hl7_message}")
+                            
 
                             parsed_message = self.parser.parse(hl7_message)
                             if parsed_message[0] == "ORU^R01":
+
                                 mrn = parsed_message[2][0]["mrn"]
                                 creatinine_value = parsed_message[2][0]["test_value"]
                                 test_time = parsed_message[2][0]["test_time"]
 
+                                logging.info(f"Patient {mrn} has creatinine value {creatinine_value} at {test_time}")
                                 await self.worker_queue.put(
                                     (mrn, creatinine_value, test_time)
                                 )
+                                await asyncio.sleep(0)  # Yield control to event loop
 
                             ack_message = self.generate_hl7_ack(hl7_message)
                             client_socket.sendall(ack_message)
-                            logging.info(f"[ACK SENT]:\n{ack_message.decode('utf-8')}")
+                            logging.info(f"[ACK SENT]")
 
                     except socket.timeout:
                         logging.warning("[-] Read timeout. Closing connection.")
@@ -121,13 +124,13 @@ class Controller:
 
                 client_socket.close()
                 logging.info("[*] Connection closed. Waiting 5s before reconnecting...")
-                await asyncio.sleep(5)
+                await asyncio.sleep(1)
 
             except (ConnectionRefusedError, ConnectionResetError):
                 logging.error(
                     f"[-] Could not connect to {SIMULATOR_HOST}:{SIMULATOR_PORT}, retrying in 5s..."
                 )
-                await asyncio.sleep(5)
+                await asyncio.sleep(1)
 
     async def supervise(self):
         """Monitors workers and restarts them if they fail."""
@@ -170,6 +173,7 @@ class Controller:
 # Main function of the system
 async def main():
     model = Model("history.csv")
+
     controller = Controller(model)
 
     asyncio.create_task(controller.supervise())
