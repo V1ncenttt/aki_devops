@@ -10,9 +10,11 @@ COPY main.py /aki-system/
 COPY parser.py /aki-system/
 COPY controller.py /aki-system/
 COPY model.py /aki-system/
+COPY requirements.txt /aki-system/
 WORKDIR /aki-system
 
 RUN python3 -m venv /aki-system
+RUN /aki-system/bin/pip3 install -r /aki-system/requirements.txt
 
 EXPOSE 8440
 EXPOSE 8441
