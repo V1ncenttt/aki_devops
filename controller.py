@@ -57,8 +57,11 @@ class Controller:
 
                 alert_needed = await self.model.predict_aki(mrn, creatinine_value)
 
+
                 if alert_needed:
                     await self.send_pager_alert(mrn, test_time)
+                
+                await self.model.add_measurement(mrn, creatinine_value, test_time) #Add the measurement to the database
 
             except Exception as e:
                 logging.error(

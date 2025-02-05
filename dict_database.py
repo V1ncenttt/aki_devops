@@ -3,6 +3,7 @@ blablabla
 """
 import csv
 from collections import defaultdict
+import asyncio
 
 class DictDatabase:
     """_summary_
@@ -15,6 +16,7 @@ class DictDatabase:
         """
 
         self.dict_database = defaultdict(list)
+        self.lock = asyncio.Lock()
 
         # Read the CSV file efficiently
         with open(filename, mode="r", newline="", encoding="utf-8") as file:
@@ -40,7 +42,7 @@ class DictDatabase:
                 self.dict_database[mrn] = measurements
         
 
-    def get_data(self, mrn):
+    async def get_data(self, mrn):
         """_summary_
 
         Args:
@@ -49,16 +51,18 @@ class DictDatabase:
         Returns:
             _type_: _description_
         """
-        return self.dict_database[mrn]
+        async with self.lock:
+            return self.dict_database.get(mrn, []) #Prevents KeyError
 
-    def add_data(self, mrn, data):
+    async def add_data(self, mrn, data):
         """_summary_
 
         Args:
             mrn (_type_): _description_
             data (_type_): _description_
         """
-        self.dict_database[mrn].append(data)
+        async with self.lock:
+            self.dict_database[mrn].append(data)
 
 
 

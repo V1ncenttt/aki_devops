@@ -27,6 +27,16 @@ class Model:
         """
         return NotImplementedError
 
+    async def add_measurement(self, mrn, measurement, test_date):
+        """_summary_
+
+        Args:
+            mrn (_type_): _description_
+            measurement (_type_): _description_
+            test_date (_type_): _description_
+        """
+        return self.database.add_data(mrn, (measurement, test_date))
+    
     def get_past_measurements(self, mrn):
         """_summary_
 
