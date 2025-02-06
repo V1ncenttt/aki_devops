@@ -2,19 +2,16 @@
 """
 
 # Imports
-import argparse
-import csv
-import random
 import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
-from sklearn.metrics import fbeta_score  
 import json 
 from pandas_database import PandasDatabase
 import logging
+
+
 ######################################
 
 class SimpleNN(nn.Module):
@@ -46,19 +43,9 @@ class Model:
         self.expected_columns_len = len(self.expected_columns)  # Ensure we get the correct number of features
         self.model = SimpleNN(input_size=self.expected_columns_len, hidden_size=64)  # Match training definition
         self.model.load_state_dict(torch.load('model.pth'))  # Load trained weights
+        self.model.eval()
 
-    def create_tensor_from_measurements(self, measurements):
-        """_summary_
-
-        Args:
-            measurements (_type_): _description_
-
-        Returns:
-            _type_: _description_
-        """
-        return NotImplementedError
-
-    async def add_measurement(self, mrn, measurement, test_date):
+    def add_measurement(self, mrn, measurement, test_date):
         """_summary_
 
         Args:
@@ -66,9 +53,7 @@ class Model:
             measurement (_type_): _description_
             test_date (_type_): _description_
         """
-        
-        
-        return self.database.add_data(mrn, (measurement, test_date))
+        return self.database.add_measurement(mrn, measurement, test_date)
     
     async def get_past_measurements(self, mrn, creatinine_value, test_time):
         """_summary_
@@ -79,20 +64,31 @@ class Model:
         Returns:
             _type_: _description_
         """
-        patient_vector = await self.database.get_data(mrn)
+        patient_vector = self.database.get_data(mrn)
+
+        if patient_vector is None or patient_vector.empty:
+            # print(f"[WARNING] Patient {mrn} not found in database. Creating a new entry.")
+            return None  # Handle case where patient does not exist
         
-        # if patient_data is None:
-        #     return None  # Return None if no past data is found
         
-        
+        # Convert Series to DataFrame if needed
+        if isinstance(patient_vector, pd.Series):
+            patient_vector = patient_vector.to_frame().T  # Convert to DataFrame
+
+        # print(patient_vector)  # Debugging print to verify it is a DataFrame
+
         ### FIND LAST INDEX USED
         # Find the last used creatinine_date column
-        date_cols = [col for col in patient_vector.index if "creatinine_date" in col]
+        
+        date_cols = [col for col in patient_vector.columns if isinstance(col, str) and "creatinine_date" in col]
+
+        
         last_used_n = -1  # Default if no columns exist
         
         for col in date_cols:
             n = int(col.split("_")[-1])  # Extract the number from creatinine_date_n
-            if pd.notna(self.df.at[mrn, col]):  # Check if it has a value
+            # print(patient_vector[col])
+            if not patient_vector[col].isna().all(): # Check if it has a value
                 last_used_n = max(last_used_n, n)
                 
         # Next available index
@@ -109,7 +105,7 @@ class Model:
         
         
         #Convert to tensor
-        return torch.tensor(patient_vector, dtype=torch.float32)
+        return patient_vector
     
     def add_patient(self, mrn, age=None, sex=None):
         """_summary_
@@ -157,6 +153,7 @@ class Model:
         else: y = 0
         
         # Fill nan values with 0
+        df = df.apply(pd.to_numeric, errors='coerce')  # Convert all columns to numeric, replacing invalids with NaN
         df.fillna(0, inplace=True)
         
         # 🔹 Extract the same creatinine result columns as training

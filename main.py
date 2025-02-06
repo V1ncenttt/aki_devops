@@ -9,16 +9,10 @@ from pandas_database import PandasDatabase
 import os
 import asyncio
 
-async def main(mllp_port, pager_port):
-    #hl7parser = HL7Parser() currently not needed as controller initializes on its own, refactor in future ideally
-
-    database = PandasDatabase("history.csv")
-    model = Model(database)
+def main():
+    model = Model("history.csv")
     controller = Controller(model)
-
-    asyncio.create_task(controller.worker_manager())
-    await controller.hl7_listen()
-
+    controller.hl7_listen()
 
 
 if __name__ == "__main__":
@@ -36,9 +30,7 @@ if __name__ == "__main__":
     #pager_port = flags.pager
 
     # run system
-    try:
-        asyncio.run(main(mllp_port, pager_port))
-    except Exception as e:
-        print(f"System Error: {e}")
-        # TODO: In future add preventative measures for system crashes, not relevant for this week however.
+    main()
+   
+    # TODO: In future add preventative measures for system crashes, not relevant for this week however.
 

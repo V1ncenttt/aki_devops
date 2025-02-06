@@ -47,7 +47,8 @@ class HL7Parser:
                     self._parse_pid(fields)
 
                 elif segment_type == "OBR" and self.message_type == "ORU^R01": # If the current segment is "OBR", we will extract the time at which the test was obtained
-                    self.test_timestamp = fields[6] if len(fields) > 6 and fields[6] else datetime.now().isoformat()
+                    self.test_timestamp = fields[7] if len(fields) > 7 and fields[7] else datetime.now().isoformat()
+                    
                     
                 elif segment_type == "OBX" and self.message_type == "ORU^R01": # If the current segment is "OBX", we will extract the value of the test
                     self._parse_obx(fields)
