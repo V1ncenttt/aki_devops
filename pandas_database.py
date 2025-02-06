@@ -23,7 +23,7 @@ class PandasDatabase:
         
         # Add empty 'age' and 'sex' columns
         self.df.insert(1, "age", None)
-        self.dfinsert(2, "sex", None)
+        self.df.insert(2, "sex", None)
 
  
 

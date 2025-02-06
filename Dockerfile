@@ -11,6 +11,10 @@ COPY parser.py /aki-system/
 COPY controller.py /aki-system/
 COPY model.py /aki-system/
 COPY requirements.txt /aki-system/
+COPY history.csv /aki-system/
+COPY train_model_script.py /aki-system/
+COPY expected_columns.json /aki-system/
+COPY model.pth /aki-system/
 WORKDIR /aki-system
 
 RUN python3 -m venv /aki-system

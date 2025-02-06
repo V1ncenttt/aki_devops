@@ -12,10 +12,23 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 from sklearn.metrics import fbeta_score  
-from train_model_script import SimpleNN 
 import json 
 
 ######################################
+
+class SimpleNN(nn.Module):
+        def __init__(self, input_size, hidden_size):
+            super(SimpleNN, self).__init__()
+            self.hidden = nn.Linear(input_size, hidden_size)
+            self.activation_hidden = nn.ReLU()  # ReLU for hidden layer
+            self.output = nn.Linear(hidden_size, 1)
+            self.activation_output = nn.Sigmoid() # Sigmoid for binary classification
+
+        def forward(self, x):
+            x = self.activation_hidden(self.hidden(x))
+            x = self.activation_output(self.output(x))
+            return x
+
 class Model:
     """_summary_"""
 
