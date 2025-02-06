@@ -20,30 +20,39 @@ def main():
     mllp_address = os.getenv("MLLP_ADDRESS", "message-simulator:8440")
     pager_address = os.getenv("PAGER_ADDRESS", "message-simulator:8441")
 
-    model = Model("history.csv")
-    controller = Controller(model)
-    controller.hl7_listen(mllp_address)
-
     # TODO: use async for better pipeline workload balancing
+
+    # ---------------------------------------------------- #
+    # initialization stage
+    # ---------------------------------------------------- #
     msg_queue = []#asyncio.Queue()
     parsed_queue = []#asyncio.Queue()
+    predict_queue = []
     patient_data = {}
 
-    mllp_listener = MllpListener(mllp_port, msg_queue)
-    hl7parser = HL7Parser(msg_queue, parsed_queue)
-    data_operator = DataOperator(parsed_queue)
-    # unsure how to continue here
-    #pager_operator = PagerOperator()
+    mllp_listener = MllpListener(mllp_address, msg_queue)
+    #hl7parser = HL7Parser(msg_queue, parsed_queue)
+    data_operator = DataOperator(msg_queue, predict_queue)
+    model = Model("history.csv", predict_queue)
 
-    # TODO: create running linear pipeline
-    await asyncio.gather(
-        mllp_listener.start(),
-        hl7parser.start(),
-        data_operator.start(),
-    )
+    # ---------------------------------------------------- #
+    # Running the system (stage)
+    # ---------------------------------------------------- #
+    try:
+        while True:
+            mllp_listener.run()
+            data_operator.run()
+    except Exception as e:
+        print(f"Exception occured:\n{e}")
+        print("Process interrupted")
 
 
-    while True:
+    # ---------------------------------------------------- #
+    #shutdown stage
+    # ---------------------------------------------------- #
+    mllp_listener.shutdown()  
+    
+
 
 
 
