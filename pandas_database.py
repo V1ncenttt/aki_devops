@@ -16,8 +16,6 @@ class PandasDatabase:
             filename (_type_): _description_
         """
 
-        
-        self.lock = asyncio.Lock()
         self.df = pd.read_csv(filename)
         self.history_preprocessing()
         
@@ -52,7 +50,7 @@ class PandasDatabase:
 
     
 
-    async def get_data(self, mrn):
+    def get_data(self, mrn):
         """_summary_
 
         Args:
@@ -61,46 +59,38 @@ class PandasDatabase:
         Returns:
             _type_: _description_
         """
-        async with self.lock:
+        
             # Returns df row 
             
-            patient_data =  self.df[self.df['mrn'] == mrn]
-            if not patient_data.empty: 
-                age = patient_data['age'].values[0]
-                sex = patient_data['sex'].values[0]    
-
-                age = age if pd.notna(age) else 30
-                sex = sex if pd.notna(sex) else 0
-             
-
-                return age, sex
-            else:
-                return None, None #TODO: should this be some sort of erroring thing?
+        patient_data =  self.df[self.df['mrn'] == mrn]
+        return patient_data # TODO: Default values??
 
         
-    async def add_patient(self, mrn, age=None, sex=None):
+    def add_patient(self, mrn, age=None, sex=None):
         """_summary_
 
         Args:
             mrn (_type_): _description_
             age (_type_, optional): _description_. Defaults to None.
         """
-        async with self.lock:
+        
             
-            # Check if patien already is in the system 
-            if mrn in self.df["mrn"].values:
-                self.df[self.df["mrn"] == mrn, ["age", "sex"]] = age, sex
-            else:
-                # Create new row 
-                new_row = {"mrn": mrn, "age": age, "sex": sex}
-                self.df = pd.concat([self.df, pd.DataFrame([new_row])], ignore_index=True)
-                
+        # Check if patien already is in the system 
+        if mrn in self.df["mrn"].values:
+
+            self.df.loc[self.df["mrn"] == mrn, "age"] = age
+            self.df.loc[self.df["mrn"] == mrn, "sex"] = sex
+        else:
+            # Create new row 
+            new_row = {"mrn": mrn, "age": age, "sex": sex}
+            self.df = pd.concat([self.df, pd.DataFrame([new_row])], ignore_index=True)
+            
                 
 
 
         
         
-    async def add_measurement(self, mrn, measurement, test_date):
+    def add_measurement(self, mrn, measurement, test_date):
         """_summary_
 
         Args:

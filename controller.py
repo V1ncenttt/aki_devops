@@ -1,20 +1,18 @@
-import asyncio
 import os
 import requests
 import logging
 import socket
 import datetime
-from concurrent.futures import ThreadPoolExecutor  # ✅ Add thread pool
 from model import Model
 from parser import HL7Parser, START_BLOCK, END_BLOCK
 
 import os
 
 # Set the correct host for the HL7 Simulator
-SIMULATOR_HOST = os.getenv("SIMULATOR_HOST", "message-simulator")  # Use actual container name
-SIMULATOR_PORT = int(os.getenv("SIMULATOR_PORT", "8440"))  # Ensure it's an int
+SIMULATOR_HOST = '0.0.0.0'  # Use actual container name
+SIMULATOR_PORT = 8440 # Ensure it's an int
 
-
+#TODO: Don't forget to change to getenv
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -25,42 +23,45 @@ class Controller:
 
     def __init__(self, model):
         self.model = model
-        self.pager_url = f"http://{os.getenv('PAGER_HOST', 'message-simulator')}:8441/page"
-        self.worker_queue = asyncio.Queue()
+        self.pager_url = "0.0.0.0:8441/page"
         self.parser = HL7Parser()
-        self.executor = ThreadPoolExecutor(max_workers=5)
-
-
-
-    async def worker_manager(self):
-        """Manages worker threads and assigns tasks from the queue."""
-        while True:
-            mrn, creatinine_value, test_time = await self.worker_queue.get()
-
-            
-            asyncio.create_task(self.run_worker(mrn, creatinine_value, test_time))
-
-    async def run_worker(self, mrn, creatinine_value, test_time):
-        """Runs a worker in a background thread using ThreadPoolExecutor."""
-        loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(self.executor, self.process_patient, mrn, creatinine_value, test_time)
-        
-        if result:
-            await self.send_pager_alert(mrn, test_time)
-
-        await loop.run_in_executor(self.executor, self.model.add_measurement, mrn, creatinine_value, test_time)
-
-    async def process_patient(self, mrn, creatinine_value, test_time):
-        """Runs ML model inside a worker asynchronously."""
+       
+    def process_patient(self, mrn, creatinine_value, test_time):
         logging.info(f"[WORKER] Processing Patient {mrn} at {test_time}...")
 
-        patient_vector = await self.model.get_past_measurements(mrn, creatinine_value, test_time)
+        patient_vector = self.model.get_past_measurements(mrn, creatinine_value, test_time)
 
         alert_needed = self.model.predict_aki(patient_vector)
         logging.info(f"prediction_made:{alert_needed}")
-        return alert_needed
 
-    async def hl7_listen(self):
+        if alert_needed:
+            self.send_pager_alert(mrn, test_time)
+
+        self.model.add_measurement(mrn, creatinine_value, test_time)
+
+
+    def process_adt_message(self, message):  
+        mrn = message[1]["mrn"]
+        name = message[1]["name"]
+        age = message[1]["age"]
+        sex = message[1]['gender']
+
+        self.model.add_patient(mrn, age, sex)
+
+        logging.info(f"Patient {name} with MRN {mrn} added to the database")
+
+    def process_oru_message(self, message):
+        mrn = message[2][0]["mrn"]
+        creatinine_value = message[2][0]["test_value"]
+        test_time = message[2][0]["test_time"]
+
+
+        logging.info(f"Patient {mrn} has creatinine value {creatinine_value} at {test_time}")
+        self.process_patient(mrn, creatinine_value, test_time)
+
+        
+
+    def hl7_listen(self):
         """Listen for HL7 messages, process them, and assign workers."""
         logging.info(f"[*] Connecting to HL7 Simulator at {SIMULATOR_HOST}:{SIMULATOR_PORT}...")
 
@@ -90,11 +91,15 @@ class Controller:
 
                             parsed_message = self.parser.parse(hl7_message)
                             
-                            # Add error check 
+                            
                             if parsed_message is None or parsed_message[0] is None:
                                 logging.error("Received invalid HL7 message or unknown message type.")
-                                return  # Prevents further errors
-
+                                break  # Prevents further errors
+                            elif parsed_message[0] == "ORU^R01":
+                                self.process_oru_message(parsed_message)
+                            elif parsed_message[0] == "ADT^A01":
+                                self.process_adt_message(parsed_message)
+                            """
                             if parsed_message[0] == "ORU^R01":
                                 mrn = parsed_message[2][0]["mrn"]
                                 creatinine_value = parsed_message[2][0]["test_value"]
@@ -122,6 +127,7 @@ class Controller:
                                 self.model.add_patient(mrn, age, sex)
                                 logging.info(f"Patient {name} with MRN {mrn} added to the database")
 
+                            """
 
                             ack_message = self.parser.generate_hl7_ack(hl7_message)
                             client_socket.sendall(ack_message)
@@ -132,16 +138,15 @@ class Controller:
                         break
 
                 client_socket.close()
-                logging.info("[*] Connection closed. Waiting 5s before reconnecting...")
-                #TODO: Change exit to retry in the future
-                exit(0)
-                await asyncio.sleep(1)
+                logging.info("[*] Connection closed. Quitting...")
+                return
+                
 
             except (ConnectionRefusedError, ConnectionResetError):
                 logging.error(f"[-] Could not connect to {SIMULATOR_HOST}:{SIMULATOR_PORT}, retrying in 5s...")
-                await asyncio.sleep(1)
+                os.sleep(5)
 
-    async def send_pager_alert(self, mrn, timestamp):
+    def send_pager_alert(self, mrn, timestamp):
         """Send a pager alert asynchronously."""
         timestamp = timestamp.replace("-", "").replace(" ", "").replace(":", "").replace('T', '').split('.')[0]
 
@@ -156,15 +161,15 @@ class Controller:
                 return
             except requests.RequestException as e:
                 logging.warning(f"[ALERT FAILED] Retrying... {e}")
-                await asyncio.sleep(0.1)  # Wait before retrying
+                os.sleep(1)  # Wait before retrying
 
 
-async def main():
+def main():
     model = Model("history.csv")
     controller = Controller(model)
+    controller.hl7_listen()
 
-    asyncio.create_task(controller.worker_manager())  # ✅ Start worker manager
-    await controller.hl7_listen()  # ✅ Run HL7 listener
+    
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
