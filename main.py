@@ -8,6 +8,7 @@ from mllp_listener import MllpListener
 from parser import HL7Parser 
 from model import Model
 from data_operator import DataOperator
+from pager import Pager
 
 
 # library imports
@@ -34,7 +35,7 @@ def main():
     #hl7parser = HL7Parser(msg_queue, parsed_queue)
     data_operator = DataOperator(msg_queue, predict_queue)
     model = Model("history.csv", predict_queue)
-    pager = 
+    pager = Pager(pager_address)
 
     # ---------------------------------------------------- #
     # Running the system (stage)
@@ -45,8 +46,8 @@ def main():
             keep_running = data_operator.run()
             if keep_running:
                 page_team = model.run()
-                if page_team:
-                    pager.run()
+                if not (page_team == None):
+                    pager.run(*page_team)
 
             
     except Exception as e:

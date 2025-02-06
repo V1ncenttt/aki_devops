@@ -29,11 +29,12 @@ class DataOperator:
 
         # alert_needed = self.model.predict_aki(patient_vector)
         
-        self.pred_queue.append((mrn, patient_vector))
+        self.pred_queue.append((mrn, test_time, patient_vector))
         
         # logging.info(f"prediction_made:{alert_needed}")
 
         self.database.add_measurement(mrn, creatinine_value, test_time)     
+        return
 
 
     def process_adt_message(self, message):  

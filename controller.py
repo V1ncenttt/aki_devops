@@ -1,4 +1,4 @@
-pimport os
+import os
 import requests
 import logging
 import socket

@@ -1,5 +1,6 @@
 import logging
 import requests
+import time
 
 class Pager:
     def __init__(self, pager_address):
@@ -24,3 +25,8 @@ class Pager:
             except requests.RequestException as e:
                 logging.warning(f"[ALERT FAILED] Retrying... {e}")
                 time.sleep(1)  # Wait before retrying
+        return
+    
+    def run(self, mrn, test_time):
+        self.send_pager_alert(mrn, test_time)
+        return

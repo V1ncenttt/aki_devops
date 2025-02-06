@@ -154,6 +154,10 @@ class Model:
         return (predictions > 0.3).astype(int) # Lower than usual because we care more about F3 
         
     def run(self):
-        patient_vector = self.predict_queue.pop(0) # THIS IS SUPER INEFFICIENT LATER CHANGE USEAGE OF TYPE OF QUEUE FOR SPEED
-        return self.predict_aki(patient_vector)
+        (mrn, test_time, patient_vector) = self.predict_queue.pop(0) # THIS IS SUPER INEFFICIENT LATER CHANGE USEAGE OF TYPE OF QUEUE FOR SPEED
+        if self.predict_aki(patient_vector):
+            return (mrn, test_time)
+        else:
+            return None
+
 
