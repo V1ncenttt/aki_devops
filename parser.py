@@ -9,16 +9,10 @@ class HL7Parser:
    This class is responsible for parsing the incoming messages. Different returns will be produced based on the message type. It can be reused multiple times with different messages.
    """
     
-    def __init__(self):
+    def __init__(self, msg_queue, parsed_queue):
         """Initialize the parser with default values."""
-        self.reset()
-    
-    def reset(self):
-        """Reset the parser's stored data to ensure clean parsing for a new message."""
-        self.message_type = None
-        self.patient_data = {}
-        self.blood_tests = []
-        self.test_timestamp = None
+        #self.reset()
+        pass # nothing needed for initialization
     
     def calculate_age(self, dob):
         """Calculate age from date of birth. This function will be used to return the patient's age instead of their date of birth, when being admitted to a hospital."""
@@ -31,10 +25,10 @@ class HL7Parser:
     
     def parse(self, message):
         """Parse the given HL7 message."""
-        self.reset()  # Reset stored data before parsing a new message
-        
         try:
             segments = message.strip().split("\r")  # Split the message into segments
+            print("segments")
+            exit()
             
             for segment in segments:
                 fields = segment.split("|")  # Split each segment into fields

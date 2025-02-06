@@ -1,27 +1,40 @@
 # file/class imports
+from mllp_listener import MllpListener
 from parser import HL7Parser 
 from model import Model
 from data_operator import DataOperator
 from pager_operator import PagerOperator
 
 # library imports
-#import argparse
+import asyncio
 import os
 
-def main(mllp_port, pager_port):
-    hl7parser = HL7Parser()
-    data_operator = DataOperator()
-    model = Model()
+async def main(mllp_port, pager_port):
+
+    msg_queue = asyncio.Queue()
+    parsed_queue = asyncio.Queue()
+    patient_data = {}
+
+    mllp_listener = MllpListener(mllp_port, msg_queue)
+    hl7parser = HL7Parser(msg_queue, parsed_queue)
+    data_operator = DataOperator(parsed_queue)
+    # unsure how to continue here
     pager_operator = PagerOperator()
 
     # TODO: create running linear pipeline
+    await asyncio.gather(
+        mllp_listener.start(),
+        hl7parser.start(),
+        data_operator.start(),
+    )
+
 
 
 
 if __name__ == "__main__":
     # read the environment variables for the mllp and pager ports
-    mllp_port = os.getenv("MLLP_ADDRESS", "8440")
-    pager_port = os.getenv("PAGER_ADDRESS", "8441")
+    mllp_port = os.getenv("MLLP_ADDRESS", "localhost:8440")
+    pager_port = os.getenv("PAGER_ADDRESS", "localhost:8441")
 
     # run system
     try:
