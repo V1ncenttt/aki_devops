@@ -34,6 +34,7 @@ def main():
     #hl7parser = HL7Parser(msg_queue, parsed_queue)
     data_operator = DataOperator(msg_queue, predict_queue)
     model = Model("history.csv", predict_queue)
+    pager = 
 
     # ---------------------------------------------------- #
     # Running the system (stage)
@@ -41,7 +42,13 @@ def main():
     try:
         while True:
             mllp_listener.run()
-            data_operator.run()
+            keep_running = data_operator.run()
+            if keep_running:
+                page_team = model.run()
+                if page_team:
+                    pager.run()
+
+            
     except Exception as e:
         print(f"Exception occured:\n{e}")
         print("Process interrupted")
