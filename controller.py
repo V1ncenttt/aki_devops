@@ -10,8 +10,6 @@ import os
 
 # Set the correct host for the HL7 Simulator
 # Set the correct host for the HL7 Simulator
-SIMULATOR_HOST = os.getenv("SIMULATOR_HOST", "message-simulator")  # Use actual container name
-SIMULATOR_PORT = int(os.getenv("SIMULATOR_PORT", "8440"))  # Ensure it's an int
 
 #TODO: Don't forget to change to getenv
 
@@ -66,15 +64,17 @@ class Controller:
 
         
 
-    def hl7_listen(self):
+    def hl7_listen(self, mllp_address):
         """Listen for HL7 messages, process them, and assign workers."""
-        logging.info(f"[*] Connecting to HL7 Simulator at {SIMULATOR_HOST}:{SIMULATOR_PORT}...")
+        mllp_host = mllp_address.split(":")[0]
+        mllp_port = int(mllp_address.split(":")[1])
+        logging.info(f"[*] Connecting to HL7 Simulator at {mllp_host}:{mllp_port}...")
 
         while True:
             try:
                 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 client_socket.settimeout(10)
-                client_socket.connect((SIMULATOR_HOST, SIMULATOR_PORT))
+                client_socket.connect((mllp_host, mllp_port))
                 logging.info("[+] Connected to HL7 Simulator!")
 
                 buffer = b""
@@ -145,7 +145,7 @@ class Controller:
                 
 
             except (ConnectionRefusedError, ConnectionResetError):
-                logging.error(f"[-] Could not connect to {SIMULATOR_HOST}:{SIMULATOR_PORT}, retrying in 5s...")
+                logging.error(f"[-] Could not connect to {mllp_host}:{mllp_port}, retrying in 5s...")
                 time.sleep(5)
 
     def send_pager_alert(self, mrn, timestamp):

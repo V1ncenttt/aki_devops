@@ -16,9 +16,13 @@ import os
 import asyncio
 
 def main():
+    # read the environment variables for the mllp and pager ports
+    mllp_address = os.getenv("MLLP_ADDRESS", "message-simulator:8440")
+    pager_address = os.getenv("PAGER_ADDRESS", "message-simulator:8441")
+
     model = Model("history.csv")
     controller = Controller(model)
-    controller.hl7_listen()
+    controller.hl7_listen(mllp_address)
 
     # TODO: use async for better pipeline workload balancing
     msg_queue = []#asyncio.Queue()
@@ -44,19 +48,6 @@ def main():
 
 
 if __name__ == "__main__":
-    # read the environment variables for the mllp and pager ports
-    mllp_port = os.getenv("MLLP_ADDRESS", "localhost:8440")
-    pager_port = os.getenv("PAGER_ADDRESS", "localhost:8441")
-
-    # i think passing ports as flags is more work so i used the above for now
-    #parser = argparse.ArgumentParser()
-    #parser.add_argument("--messages", default="messages.mllp", help="HL7 messages to replay, in MLLP format")
-    #parser.add_argument("--mllp", default=8440, type=int, help="Port on which to replay HL7 messages via MLLP")
-    #parser.add_argument("--pager", default=8441, type=int, help="Post on which to listen for pager requests via HTTP")
-    #flags = parser.parse_args()
-    #mllp_port = flags.mllp
-    #pager_port = flags.pager
-
     # run system
     main()
    
