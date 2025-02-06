@@ -45,8 +45,8 @@ def main():
 
 if __name__ == "__main__":
     # read the environment variables for the mllp and pager ports
-    mllp_port = os.getenv("MLLP_ADDRESS", "8440")
-    pager_port = os.getenv("PAGER_ADDRESS", "8441")
+    mllp_port = os.getenv("MLLP_ADDRESS", "localhost:8440")
+    pager_port = os.getenv("PAGER_ADDRESS", "localhost:8441")
 
     # i think passing ports as flags is more work so i used the above for now
     #parser = argparse.ArgumentParser()
