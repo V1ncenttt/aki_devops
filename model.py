@@ -14,12 +14,7 @@ import numpy as np
 from sklearn.metrics import fbeta_score  
 import json 
 from pandas_database import PandasDatabase
-<<<<<<< HEAD
-=======
 import logging
-
->>>>>>> 51468bc (Fixed concurency issues and docker issues)
-
 ######################################
 
 class SimpleNN(nn.Module):
