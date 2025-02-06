@@ -1,9 +1,5 @@
 FROM ubuntu:oracular
 
-# Environment variables
-ENV MLLP_ADDRESS=8440
-ENV PAGER_ADDRESS=8441 
-
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -yq install python3-pip python3-venv
 
 WORKDIR /aki-system
