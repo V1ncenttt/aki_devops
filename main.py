@@ -1,7 +1,6 @@
 # file/class imports
 from parser import HL7Parser 
 from model import Model
-from controller import Controller 
 from pandas_database import PandasDatabase
 
 from mllp_listener import MllpListener
@@ -15,6 +14,7 @@ from pager import Pager
 #import argparse
 import os
 import asyncio
+import logging
 
 def main():
     # read the environment variables for the mllp and pager ports
@@ -34,7 +34,7 @@ def main():
     mllp_listener = MllpListener(mllp_address, msg_queue)
     #hl7parser = HL7Parser(msg_queue, parsed_queue)
     data_operator = DataOperator(msg_queue, predict_queue)
-    model = Model("history.csv", predict_queue)
+    model = Model(predict_queue)
     pager = Pager(pager_address)
 
     # ---------------------------------------------------- #

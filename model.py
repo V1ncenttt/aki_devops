@@ -38,6 +38,8 @@ class Model:
             
         """
         self.predict_queue = predict_queue
+        with open('expected_columns.json', 'r') as f:
+            self.expected_columns = json.load(f)
         self.expected_columns_len = len(self.expected_columns)  # Ensure we get the correct number of features
         self.model = SimpleNN(input_size=self.expected_columns_len, hidden_size=64)  # Match training definition
         self.model.load_state_dict(torch.load('model.pth', weights_only=True))  # Load trained weights

@@ -58,7 +58,7 @@ class PandasDatabase(Database):
         Returns:
             _type_: _description_
         """
-        patient_vector = self.database.get_data(mrn)
+        patient_vector = self.get_data(mrn)
 
         if patient_vector is None or patient_vector.empty:
             # print(f"[WARNING] Patient {mrn} not found in database. Creating a new entry.")

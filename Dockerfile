@@ -12,14 +12,16 @@ RUN /aki-system/bin/pip3 install -r /aki-system/requirements.txt
 COPY main.py /aki-system/
 COPY database.py /aki-system/
 COPY parser.py /aki-system/
-COPY controller.py /aki-system/
-COPY model.py /aki-system/
 COPY requirements.txt /aki-system/
 COPY history.csv /aki-system/
 COPY train_model_script.py /aki-system/
 COPY expected_columns.json /aki-system/
 COPY model.pth /aki-system/
 COPY pandas_database.py /aki-system/
+COPY mllp_listener.py /aki-system/
+COPY data_operator.py /aki-system/
+COPY model.py /aki-system/
+COPY pager.py /aki-system/
 
 
 EXPOSE 8440

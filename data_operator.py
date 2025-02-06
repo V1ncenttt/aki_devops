@@ -13,28 +13,19 @@ class DataOperator:
         self.msg_queue = msg_queue
         self.predict_queue = predict_queue
 
-    def get_past_measurements(self, mrn, creatinine_value, test_time):
-        """_summary_
-
-        Args:
-            mrn (_type_): _description_
-            age (_type_, optional): _description_. Defaults to None.
-        """
-        return self.database.get_past_measurements(self, mrn, creatinine_value, test_time)
 
     def process_patient(self, mrn, creatinine_value, test_time):
         logging.info(f"[WORKER] Processing Patient {mrn} at {test_time}...")
 
-        patient_vector = self.get_past_measurements(mrn, creatinine_value, test_time)
+        patient_vector = self.database.get_past_measurements(mrn, creatinine_value, test_time)
 
         # alert_needed = self.model.predict_aki(patient_vector)
         
-        self.pred_queue.append((mrn, test_time, patient_vector))
+        self.predict_queue.append((mrn, test_time, patient_vector))
         
         # logging.info(f"prediction_made:{alert_needed}")
 
         self.database.add_measurement(mrn, creatinine_value, test_time)     
-        return
 
 
     def process_adt_message(self, message):  
@@ -61,9 +52,9 @@ class DataOperator:
 
     def process_message(self, message):
         if message[0] == "ORU^R01":
-            self.process_oru_message(message) # need to return false after 
+            return self.process_oru_message(message) # need to return false after 
         elif message[0] == "ADT^A01":
-            self.process_adt_message(message) # need to return true after 
+            return self.process_adt_message(message) # need to return true after 
             
     def run(self):
        
@@ -74,4 +65,4 @@ class DataOperator:
             logging.error("Received invalid HL7 message or unknown message type.")
             return  # Stop errors
         else:
-            self.process_message(message)
+            return self.process_message(message)
