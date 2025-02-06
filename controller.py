@@ -1,4 +1,5 @@
 import asyncio
+import os
 import requests
 import logging
 import socket
@@ -7,8 +8,12 @@ from concurrent.futures import ThreadPoolExecutor  # ✅ Add thread pool
 from model import Model
 from parser import HL7Parser, START_BLOCK, END_BLOCK
 
-SIMULATOR_HOST = "127.0.0.1"
-SIMULATOR_PORT = 8440
+import os
+
+# Set the correct host for the HL7 Simulator
+SIMULATOR_HOST = os.getenv("SIMULATOR_HOST", "message-simulator")  # Use actual container name
+SIMULATOR_PORT = int(os.getenv("SIMULATOR_PORT", "8440"))  # Ensure it's an int
+
 
 
 
@@ -20,7 +25,7 @@ class Controller:
 
     def __init__(self, model):
         self.model = model
-        self.pager_url = "http://localhost:8441/page"
+        self.pager_url = f"http://{os.getenv('PAGER_HOST', 'message-simulator')}:8441/page"
         self.worker_queue = asyncio.Queue()
         self.parser = HL7Parser()
         self.executor = ThreadPoolExecutor(max_workers=5)
@@ -46,10 +51,13 @@ class Controller:
         await loop.run_in_executor(self.executor, self.model.add_measurement, mrn, creatinine_value, test_time)
 
     async def process_patient(self, mrn, creatinine_value, test_time):
-        """Runs ML model synchronously inside a worker thread."""
+        """Runs ML model inside a worker asynchronously."""
         logging.info(f"[WORKER] Processing Patient {mrn} at {test_time}...")
+
         patient_vector = await self.model.get_past_measurements(mrn, creatinine_value, test_time)
+
         alert_needed = self.model.predict_aki(patient_vector)
+        logging.info(f"prediction_made:{alert_needed}")
         return alert_needed
 
     async def hl7_listen(self):
@@ -81,15 +89,22 @@ class Controller:
                             buffer = buffer[end_index + len(END_BLOCK) :]
 
                             parsed_message = self.parser.parse(hl7_message)
+                            
+                            # Add error check 
+                            if parsed_message is None or parsed_message[0] is None:
+                                logging.error("Received invalid HL7 message or unknown message type.")
+                                return  # Prevents further errors
 
                             if parsed_message[0] == "ORU^R01":
                                 mrn = parsed_message[2][0]["mrn"]
                                 creatinine_value = parsed_message[2][0]["test_value"]
                                 test_time = parsed_message[2][0]["test_time"]
 
+
                                 logging.info(f"Patient {mrn} has creatinine value {creatinine_value} at {test_time}")
                                 await self.worker_queue.put((mrn, creatinine_value, test_time))
                                 await asyncio.sleep(0)  # Yield control to event loop
+
 
                             #In case of patient admission
                             if parsed_message[0] == "ADT^A01":
@@ -98,9 +113,15 @@ class Controller:
                                 name = parsed_message[1]["name"]
                                 age = parsed_message[1]["age"]
                                 sex = parsed_message[1]['gender']
+                                logging.info(parsed_message)
+                                mrn = parsed_message[1]["mrn"]
+                                name = parsed_message[1]["name"]
+                                age = parsed_message[1]["age"]
+                                sex = parsed_message[1]['gender']
 
                                 self.model.add_patient(mrn, age, sex)
                                 logging.info(f"Patient {name} with MRN {mrn} added to the database")
+
 
                             ack_message = self.parser.generate_hl7_ack(hl7_message)
                             client_socket.sendall(ack_message)

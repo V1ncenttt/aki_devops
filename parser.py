@@ -51,11 +51,15 @@ class HL7Parser:
                     
                 elif segment_type == "OBX" and self.message_type == "ORU^R01": # If the current segment is "OBX", we will extract the value of the test
                     self._parse_obx(fields)
+            output = self._generate_output()
+            if output[0] is None:
+                print(f"[ERROR] Unrecognized message type. Raw HL7 Message: {message}")  
             
             return self._generate_output()
         
         except Exception as e:
             print(f"Error parsing HL7 message: {e}")
+            
             return None, None, None
 
     def _parse_pid(self, fields):
@@ -75,7 +79,7 @@ class HL7Parser:
         """Extract test results from the OBX segment."""
         try:
             test_value = float(fields[5]) if len(fields) > 5 and fields[5] else None
-        except ValueError:
+        except (ValueError, IndexError):
             test_value = None  # Handle non-numeric test values
         
         if "mrn" in self.patient_data:  # Ensure MRN is available before appending test
@@ -108,6 +112,8 @@ class HL7Parser:
             return self.message_type, self.patient_data, None
         elif self.message_type == "ORU^R01":
             return self.message_type, None, self.blood_tests
+        print(f"[ERROR] _generate_output() returned None! Message Type: {self.message_type}")  
+
         return None, None, None
 
 

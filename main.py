@@ -2,6 +2,7 @@
 from parser import HL7Parser 
 from model import Model
 from controller import Controller 
+from pandas_database import PandasDatabase
 
 # library imports
 #import argparse
@@ -10,7 +11,9 @@ import asyncio
 
 async def main(mllp_port, pager_port):
     #hl7parser = HL7Parser() currently not needed as controller initializes on its own, refactor in future ideally
-    model = Model("history.csv")
+
+    database = PandasDatabase("history.csv")
+    model = Model(database)
     controller = Controller(model)
 
     asyncio.create_task(controller.worker_manager())
@@ -20,8 +23,8 @@ async def main(mllp_port, pager_port):
 
 if __name__ == "__main__":
     # read the environment variables for the mllp and pager ports
-    mllp_port = os.getenv("MLLP_ADRESS", "8440")
-    pager_port = os.getenv("PAGER_ADRESS", "8441")
+    mllp_port = os.getenv("MLLP_ADDRESS", "8440")
+    pager_port = os.getenv("PAGER_ADDRESS", "8441")
 
     # i think passing ports as flags is more work so i used the above for now
     #parser = argparse.ArgumentParser()

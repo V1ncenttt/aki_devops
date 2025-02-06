@@ -6,6 +6,13 @@ ENV PAGER_ADDRESS=8441
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -yq install python3-pip python3-venv
 
+WORKDIR /aki-system
+COPY requirements.txt /aki-system/
+
+RUN python3 -m venv /aki-system
+RUN /aki-system/bin/pip3 install -r /aki-system/requirements.txt
+
+
 COPY main.py /aki-system/
 COPY parser.py /aki-system/
 COPY controller.py /aki-system/
@@ -15,10 +22,8 @@ COPY history.csv /aki-system/
 COPY train_model_script.py /aki-system/
 COPY expected_columns.json /aki-system/
 COPY model.pth /aki-system/
-WORKDIR /aki-system
+COPY pandas_database.py /aki-system/
 
-RUN python3 -m venv /aki-system
-RUN /aki-system/bin/pip3 install -r /aki-system/requirements.txt
 
 EXPOSE 8440
 EXPOSE 8441

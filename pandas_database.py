@@ -63,7 +63,8 @@ class PandasDatabase:
         """
         async with self.lock:
             # Returns df row 
-            patient_data =  self.df[self.df.iloc['mrn'] == mrn]
+            
+            patient_data =  self.df[self.df['mrn'] == mrn]
             if not patient_data.empty: 
                 age = patient_data['age'].values[0]
                 sex = patient_data['sex'].values[0]    
@@ -88,7 +89,7 @@ class PandasDatabase:
             
             # Check if patien already is in the system 
             if mrn in self.df["mrn"].values:
-                self.df.loc[self.df["mrn"] == mrn, ["age", "sex"]] = age, sex
+                self.df[self.df["mrn"] == mrn, ["age", "sex"]] = age, sex
             else:
                 # Create new row 
                 new_row = {"mrn": mrn, "age": age, "sex": sex}

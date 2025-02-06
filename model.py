@@ -14,6 +14,11 @@ import numpy as np
 from sklearn.metrics import fbeta_score  
 import json 
 from pandas_database import PandasDatabase
+<<<<<<< HEAD
+=======
+import logging
+
+>>>>>>> 51468bc (Fixed concurency issues and docker issues)
 
 ######################################
 
@@ -79,7 +84,10 @@ class Model:
         Returns:
             _type_: _description_
         """
-        patient_vector = self.database.get_data(mrn)
+        patient_vector = await self.database.get_data(mrn)
+        
+        # if patient_data is None:
+        #     return None  # Return None if no past data is found
         
         
         ### FIND LAST INDEX USED
@@ -220,6 +228,7 @@ class Model:
             predictions = self.model(X_test)
 
         predictions = predictions.detach().numpy()
+        logging.info(f"prediction: {predictions}")
         
         # Convert to binary
         return (predictions > 0.3).astype(int) # Lower than usual because we care more about F3 
