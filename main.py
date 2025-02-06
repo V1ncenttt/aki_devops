@@ -15,7 +15,7 @@ def main():
     pager_address = os.getenv("PAGER_ADDRESS", "message-simulator:8441")
 
     model = Model("history.csv")
-    controller = Controller(model)
+    controller = Controller(model, pager_address)
     controller.hl7_listen(mllp_address)
 
 
