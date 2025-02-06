@@ -113,11 +113,7 @@ class Controller:
                                 name = parsed_message[1]["name"]
                                 age = parsed_message[1]["age"]
                                 sex = parsed_message[1]['gender']
-                                logging.info(parsed_message)
-                                mrn = parsed_message[1]["mrn"]
-                                name = parsed_message[1]["name"]
-                                age = parsed_message[1]["age"]
-                                sex = parsed_message[1]['gender']
+                                
 
                                 self.model.add_patient(mrn, age, sex)
                                 logging.info(f"Patient {name} with MRN {mrn} added to the database")
