@@ -31,16 +31,13 @@ class SimpleNN(nn.Module):
 class Model:
     """_summary_"""
 
-    def __init__(self, database: Database):
+    def __init__(self, predict_queue):
         """_summary_
 
         Args:
-            database (_type_): _description_
+            
         """
-        self.database = PandasDatabase('history.csv') #TODO: Change it later to be out of this and set in main
-        with open('expected_columns.json', 'r') as f:
-            self.expected_columns = json.load(f)
-        
+        self.predict_queue = predict_queue
         self.expected_columns_len = len(self.expected_columns)  # Ensure we get the correct number of features
         self.model = SimpleNN(input_size=self.expected_columns_len, hidden_size=64)  # Match training definition
         self.model.load_state_dict(torch.load('model.pth', weights_only=True))  # Load trained weights
@@ -156,7 +153,7 @@ class Model:
         # Convert to binary
         return (predictions > 0.3).astype(int) # Lower than usual because we care more about F3 
         
-        
-        
-  
+    def run(self):
+        patient_vector = self.predict_queue.pop(0) # THIS IS SUPER INEFFICIENT LATER CHANGE USEAGE OF TYPE OF QUEUE FOR SPEED
+        return self.predict_aki(patient_vector)
 
