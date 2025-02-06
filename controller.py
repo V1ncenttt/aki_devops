@@ -100,35 +100,7 @@ class Controller:
                                 self.process_oru_message(parsed_message)
                             elif parsed_message[0] == "ADT^A01":
                                 self.process_adt_message(parsed_message)
-                            """
-                            if parsed_message[0] == "ORU^R01":
-                                mrn = parsed_message[2][0]["mrn"]
-                                creatinine_value = parsed_message[2][0]["test_value"]
-                                test_time = parsed_message[2][0]["test_time"]
 
-
-                                logging.info(f"Patient {mrn} has creatinine value {creatinine_value} at {test_time}")
-                                await self.worker_queue.put((mrn, creatinine_value, test_time))
-                                await asyncio.sleep(0)  # Yield control to event loop
-
-
-                            #In case of patient admission
-                            if parsed_message[0] == "ADT^A01":
-                                logging.info(parsed_message)
-                                mrn = parsed_message[1]["mrn"]
-                                name = parsed_message[1]["name"]
-                                age = parsed_message[1]["age"]
-                                sex = parsed_message[1]['gender']
-                                logging.info(parsed_message)
-                                mrn = parsed_message[1]["mrn"]
-                                name = parsed_message[1]["name"]
-                                age = parsed_message[1]["age"]
-                                sex = parsed_message[1]['gender']
-
-                                self.model.add_patient(mrn, age, sex)
-                                logging.info(f"Patient {name} with MRN {mrn} added to the database")
-
-                            """
 
                             ack_message = self.parser.generate_hl7_ack(hl7_message)
                             client_socket.sendall(ack_message)

@@ -4,6 +4,12 @@ from model import Model
 from controller import Controller 
 from pandas_database import PandasDatabase
 
+from mllp_listener import MllpListener
+from parser import HL7Parser 
+from model import Model
+from data_operator import DataOperator
+
+
 # library imports
 #import argparse
 import os
@@ -13,6 +19,28 @@ def main():
     model = Model("history.csv")
     controller = Controller(model)
     controller.hl7_listen()
+
+    # TODO: use async for better pipeline workload balancing
+    msg_queue = []#asyncio.Queue()
+    parsed_queue = []#asyncio.Queue()
+    patient_data = {}
+
+    mllp_listener = MllpListener(mllp_port, msg_queue)
+    hl7parser = HL7Parser(msg_queue, parsed_queue)
+    data_operator = DataOperator(parsed_queue)
+    # unsure how to continue here
+    #pager_operator = PagerOperator()
+
+    # TODO: create running linear pipeline
+    await asyncio.gather(
+        mllp_listener.start(),
+        hl7parser.start(),
+        data_operator.start(),
+    )
+
+
+    while True:
+
 
 
 if __name__ == "__main__":
