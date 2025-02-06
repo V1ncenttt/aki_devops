@@ -45,11 +45,11 @@ class Controller:
 
         await loop.run_in_executor(self.executor, self.model.add_measurement, mrn, creatinine_value, test_time)
 
-    def process_patient(self, mrn, creatinine_value, test_time):
+    async def process_patient(self, mrn, creatinine_value, test_time):
         """Runs ML model synchronously inside a worker thread."""
         logging.info(f"[WORKER] Processing Patient {mrn} at {test_time}...")
-        patient_vector = self.model.get_past_measurements(mrn, creatinine_value, test_time)
-        alert_needed = self.model.predict_aki(mrn, patient_vector)
+        patient_vector = await self.model.get_past_measurements(mrn, creatinine_value, test_time)
+        alert_needed = self.model.predict_aki(patient_vector)
         return alert_needed
 
     async def hl7_listen(self):
@@ -93,10 +93,11 @@ class Controller:
 
                             #In case of patient admission
                             if parsed_message[0] == "ADT^A01":
-                                mrn = parsed_message[2][0]["mrn"]
-                                name = parsed_message[2][0]["name"]
-                                age = parsed_message[2][0]["age"]
-                                sex = parsed_message[2][0]['sex']
+                                logging.info(parsed_message)
+                                mrn = parsed_message[1]["mrn"]
+                                name = parsed_message[1]["name"]
+                                age = parsed_message[1]["age"]
+                                sex = parsed_message[1]['gender']
 
                                 self.model.add_patient(mrn, age, sex)
                                 logging.info(f"Patient {name} with MRN {mrn} added to the database")

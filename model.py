@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 from sklearn.metrics import fbeta_score  
 import json 
+from pandas_database import PandasDatabase
 
 ######################################
 
@@ -38,7 +39,7 @@ class Model:
         Args:
             database (_type_): _description_
         """
-        self.database = database
+        self.database = PandasDatabase('history.csv') #TODO: Change it later to be out of this and set in main
         with open('expected_columns.json', 'r') as f:
             self.expected_columns = json.load(f)
         
@@ -69,7 +70,7 @@ class Model:
         
         return self.database.add_data(mrn, (measurement, test_date))
     
-    async def get_past_measurements(self, mrn, creatinine_value, test_time):
+    def get_past_measurements(self, mrn, creatinine_value, test_time):
         """_summary_
 
         Args:

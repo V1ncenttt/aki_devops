@@ -97,7 +97,7 @@ class HL7Parser:
                 if len(parts) > 9:
                     msg_control_id = parts[9]
 
-        timestamp = datetime.datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
         hl7_ack = f"MSH|^~\\&|||||{timestamp}||ACK^R01|{msg_control_id}|2.5\rMSA|AA|{msg_control_id}\r"
 
         return START_BLOCK + hl7_ack.encode("utf-8") + END_BLOCK
