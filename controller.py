@@ -2,15 +2,16 @@ import os
 import requests
 import logging
 import socket
-import datetime
+import time
 from model import Model
 from parser import HL7Parser, START_BLOCK, END_BLOCK
 
 import os
 
 # Set the correct host for the HL7 Simulator
-SIMULATOR_HOST = '0.0.0.0'  # Use actual container name
-SIMULATOR_PORT = 8440 # Ensure it's an int
+# Set the correct host for the HL7 Simulator
+SIMULATOR_HOST = os.getenv("SIMULATOR_HOST", "message-simulator")  # Use actual container name
+SIMULATOR_PORT = int(os.getenv("SIMULATOR_PORT", "8440"))  # Ensure it's an int
 
 #TODO: Don't forget to change to getenv
 
@@ -23,7 +24,7 @@ class Controller:
 
     def __init__(self, model):
         self.model = model
-        self.pager_url = "0.0.0.0:8441/page"
+        self.pager_url = f"http://{os.getenv('PAGER_HOST', 'message-simulator')}:8441/page"        
         self.parser = HL7Parser()
        
     def process_patient(self, mrn, creatinine_value, test_time):
@@ -144,7 +145,7 @@ class Controller:
 
             except (ConnectionRefusedError, ConnectionResetError):
                 logging.error(f"[-] Could not connect to {SIMULATOR_HOST}:{SIMULATOR_PORT}, retrying in 5s...")
-                os.sleep(5)
+                time.sleep(5)
 
     def send_pager_alert(self, mrn, timestamp):
         """Send a pager alert asynchronously."""
@@ -161,7 +162,7 @@ class Controller:
                 return
             except requests.RequestException as e:
                 logging.warning(f"[ALERT FAILED] Retrying... {e}")
-                os.sleep(1)  # Wait before retrying
+                time.sleep(1)  # Wait before retrying
 
 
 def main():
