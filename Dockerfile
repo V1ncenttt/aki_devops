@@ -10,6 +10,7 @@ RUN /aki-system/bin/pip3 install -r /aki-system/requirements.txt
 
 
 COPY main.py /aki-system/
+COPY database.py /aki-system/
 COPY parser.py /aki-system/
 COPY controller.py /aki-system/
 COPY model.py /aki-system/
