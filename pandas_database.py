@@ -49,7 +49,7 @@ class PandasDatabase(Database):
         # TODO: should we still do this??
         # df.fillna(0, inplace=True) # Fill null values with 0 
         
-    async def get_past_measurements(self, mrn, creatinine_value, test_time):
+    def get_past_measurements(self, mrn, creatinine_value, test_time):
         """_summary_
 
         Args:
@@ -100,7 +100,6 @@ class PandasDatabase(Database):
         
         #Convert to tensor
         return patient_vector
-
     
 
     def get_data(self, mrn):
@@ -141,10 +140,8 @@ class PandasDatabase(Database):
             new_row = pd.DataFrame([[age, sex]], index=[mrn], columns=["age", "sex"])
             self.df = pd.concat([self.df, new_row])
             
-                
-
-
-        
+            
+                  
     def add_measurement(self, mrn, measurement, test_date):
         """Add a new creatinine measurement for a patient."""
         
