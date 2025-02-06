@@ -3,10 +3,10 @@ blablabla
 """
 import csv
 from collections import defaultdict
-import asyncio
+from database import Database
 import pandas as pd
 
-class PandasDatabase:
+class PandasDatabase(Database):
     """_summary_
     """
     def __init__(self, filename):
@@ -69,7 +69,7 @@ class PandasDatabase:
             return pd.DataFrame(columns = self.df.columns) #initialise and return empty dataframe
         
 
-        
+    
     def add_patient(self, mrn, age=None, sex=None):
         """_summary_
 

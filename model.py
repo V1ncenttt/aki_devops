@@ -10,6 +10,7 @@ import numpy as np
 import json 
 from pandas_database import PandasDatabase
 import logging
+from database import Database
 
 
 ######################################
@@ -30,7 +31,7 @@ class SimpleNN(nn.Module):
 class Model:
     """_summary_"""
 
-    def __init__(self, database):
+    def __init__(self, database: Database):
         """_summary_
 
         Args:
