@@ -55,7 +55,7 @@ class Model:
         """
         return self.database.add_measurement(mrn, measurement, test_date)
     
-    def get_past_measurements(self, mrn, creatinine_value, test_time):
+    async def get_past_measurements(self, mrn, creatinine_value, test_time):
         """_summary_
 
         Args:
