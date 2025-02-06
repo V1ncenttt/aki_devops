@@ -6,10 +6,12 @@ import json
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 class DataOperator:
-    def __init__(self):
+    def __init__(self, msg_queue, predict_queue):
         self.database = PandasDatabase('history.csv') #TODO: Change it later to be out of this and set in main
         with open('expected_columns.json', 'r') as f: # there should be a better way to do this check i think, maybe not even necessary, see later
             self.expected_columns = json.load(f) # TODO: understand this!
+        self.msg_queue = msg_queue
+        self.predict_queue = predict_queue
 
     def get_past_measurements(self, mrn, creatinine_value, test_time):
         """_summary_
@@ -23,15 +25,16 @@ class DataOperator:
     def process_patient(self, mrn, creatinine_value, test_time):
         logging.info(f"[WORKER] Processing Patient {mrn} at {test_time}...")
 
-        patient_vector = self.datget_past_measurements(mrn, creatinine_value, test_time)
+        patient_vector = self.get_past_measurements(mrn, creatinine_value, test_time)
 
-        alert_needed = self.model.predict_aki(patient_vector)
-        logging.info(f"prediction_made:{alert_needed}")
+        # alert_needed = self.model.predict_aki(patient_vector)
+        
+        self.pred_queue.append((mrn, patient_vector))
+        
+        # logging.info(f"prediction_made:{alert_needed}")
 
-        if alert_needed:
-            self.send_pager_alert(mrn, test_time)
+        self.database.add_measurement(mrn, creatinine_value, test_time)     
 
-        self.database.add_measurement(mrn, creatinine_value, test_time)
 
     def process_adt_message(self, message):  
         mrn = message[1]["mrn"]
@@ -42,6 +45,8 @@ class DataOperator:
         self.database.add_patient(mrn, age, sex)
 
         logging.info(f"Patient {name} with MRN {mrn} added to the database")
+        return False
+        
 
     def process_oru_message(self, message):
         mrn = message[2][0]["mrn"]
@@ -51,9 +56,21 @@ class DataOperator:
 
         logging.info(f"Patient {mrn} has creatinine value {creatinine_value} at {test_time}")
         self.process_patient(mrn, creatinine_value, test_time)
+        return True
 
     def process_message(self, message):
         if message[0] == "ORU^R01":
-            self.process_oru_message(message)
+            self.process_oru_message(message) # need to return false after 
         elif message[0] == "ADT^A01":
-            self.process_adt_message(message)
+            self.process_adt_message(message) # need to return true after 
+            
+    def run(self):
+       
+        # input is parsed message 
+        message = self.msg_queue.pop(0)
+        
+        if message is None or message[0] is None:
+            logging.error("Received invalid HL7 message or unknown message type.")
+            return  # Stop errors
+        else:
+            self.process_message(message)
