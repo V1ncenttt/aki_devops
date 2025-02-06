@@ -26,14 +26,18 @@ class Controller:
         self.model = model
         self.pager_url = f"http://{os.getenv('PAGER_HOST', 'message-simulator')}:8441/page"        
         self.parser = HL7Parser()
+        self.counter = 0
        
     def process_patient(self, mrn, creatinine_value, test_time):
-        logging.info(f"[WORKER] Processing Patient {mrn} at {test_time}...")
+        # logging.info(f"[WORKER] Processing Patient {mrn} at {test_time}...")
 
         patient_vector = self.model.get_past_measurements(mrn, creatinine_value, test_time)
 
         alert_needed = self.model.predict_aki(patient_vector)
         logging.info(f"prediction_made:{alert_needed}")
+        self.counter += 1
+        logging.info(f"\033[1;32m>>> HELLO!!!!!! Processing Patient {self.counter} <<<\033[0m")
+
 
         if alert_needed:
             self.send_pager_alert(mrn, test_time)
@@ -49,7 +53,7 @@ class Controller:
 
         self.model.add_patient(mrn, age, sex)
 
-        logging.info(f"Patient {name} with MRN {mrn} added to the database")
+        # logging.info(f"Patient {name} with MRN {mrn} added to the database")
 
     def process_oru_message(self, message):
         mrn = message[2][0]["mrn"]
@@ -57,7 +61,7 @@ class Controller:
         test_time = message[2][0]["test_time"]
 
 
-        logging.info(f"Patient {mrn} has creatinine value {creatinine_value} at {test_time}")
+        # logging.info(f"Patient {mrn} has creatinine value {creatinine_value} at {test_time}")
         self.process_patient(mrn, creatinine_value, test_time)
 
         
@@ -132,7 +136,7 @@ class Controller:
 
                             ack_message = self.parser.generate_hl7_ack(hl7_message)
                             client_socket.sendall(ack_message)
-                            logging.info(f"[ACK SENT]")
+                            # logging.info(f"[ACK SENT]")
 
                     except socket.timeout:
                         logging.warning("[-] Read timeout. Closing connection.")

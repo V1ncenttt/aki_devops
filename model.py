@@ -53,7 +53,7 @@ class Model:
             measurement (_type_): _description_
             test_date (_type_): _description_
         """
-        return self.database.add_data(mrn, (measurement, test_date))
+        return self.database.add_measurement(mrn, measurement, test_date)
     
     def get_past_measurements(self, mrn, creatinine_value, test_time):
         """_summary_
@@ -65,22 +65,30 @@ class Model:
             _type_: _description_
         """
         patient_vector = self.database.get_data(mrn)
+
+        if patient_vector is None or patient_vector.empty:
+            # print(f"[WARNING] Patient {mrn} not found in database. Creating a new entry.")
+            return None  # Handle case where patient does not exist
         
-        # if patient_data is None:
-        #     return None  # Return None if no past data is found
         
-        
+        # Convert Series to DataFrame if needed
+        if isinstance(patient_vector, pd.Series):
+            patient_vector = patient_vector.to_frame().T  # Convert to DataFrame
+
+        # print(patient_vector)  # Debugging print to verify it is a DataFrame
+
         ### FIND LAST INDEX USED
         # Find the last used creatinine_date column
-        print(patient_vector)
-        date_cols = [col for col in patient_vector if "creatinine_date" in col]
+        
+        date_cols = [col for col in patient_vector.columns if isinstance(col, str) and "creatinine_date" in col]
+
         
         last_used_n = -1  # Default if no columns exist
         
         for col in date_cols:
             n = int(col.split("_")[-1])  # Extract the number from creatinine_date_n
-            print(patient_vector[col])
-            if not patient_vector[col].empty:  # Check if it has a value
+            # print(patient_vector[col])
+            if not patient_vector[col].isna().all(): # Check if it has a value
                 last_used_n = max(last_used_n, n)
                 
         # Next available index
@@ -145,6 +153,7 @@ class Model:
         else: y = 0
         
         # Fill nan values with 0
+        df = df.apply(pd.to_numeric, errors='coerce')  # Convert all columns to numeric, replacing invalids with NaN
         df.fillna(0, inplace=True)
         
         # 🔹 Extract the same creatinine result columns as training
