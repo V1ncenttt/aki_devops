@@ -26,7 +26,6 @@ class Model:
             database (_type_): _description_
         """
         self.database = database
-        self.filepath = '.csv' #TODO: fix this from parser  
         with open('expected_columns.json', 'r') as f:
             self.expected_columns = json.load(f)
         
@@ -53,6 +52,8 @@ class Model:
             measurement (_type_): _description_
             test_date (_type_): _description_
         """
+        
+        
         return self.database.add_data(mrn, (measurement, test_date))
     
     async def get_past_measurements(self, mrn, creatinine_value, test_time):
@@ -65,12 +66,31 @@ class Model:
             _type_: _description_
         """
         patient_vector = self.database.get_data(mrn)
-        patient_vector += [test_time, creatinine_value]
+        
+        
+        ### FIND LAST INDEX USED
+        # Find the last used creatinine_date column
+        date_cols = [col for col in patient_vector.index if "creatinine_date" in col]
+        last_used_n = -1  # Default if no columns exist
+        
+        for col in date_cols:
+            n = int(col.split("_")[-1])  # Extract the number from creatinine_date_n
+            if pd.notna(self.df.at[mrn, col]):  # Check if it has a value
+                last_used_n = max(last_used_n, n)
+                
+        # Next available index
+        next_n = last_used_n + 1
 
-        #Pad with 0s if needed
-        #TODO: use your preprocessing method
-        if len(patient_vector) < self.expected_columns_len:
-            patient_vector += [0] * (self.expected_columns_len - len(patient_vector))
+        # Column names for the new test
+        new_date_col = f"creatinine_date_{next_n}"
+        new_result_col = f"creatinine_result_{next_n}"
+
+
+        # Append the new measurement to the patient vector does NOT modify the dataframe
+        patient_vector[new_date_col] = test_time
+        patient_vector[new_result_col] = creatinine_value
+        
+        
         #Convert to tensor
         return torch.tensor(patient_vector, dtype=torch.float32)
     
@@ -84,7 +104,7 @@ class Model:
         return self.database.add_patient(mrn, age,sex)
         
         
-    def test_preprocessing(self, filepath, expected_columns):
+    def test_preprocessing(self, measurement_row, expected_columns):
         """
             Preprocess input of the network. Runs on training data with AKI column.
 
@@ -98,16 +118,22 @@ class Model:
                 - {list} -- Expected labels (when using test.csv). 
                 
             """
-        # Filepath should be test.csv (the input)
-        df = pd.read_csv(filepath)
-
+            
+        
+        # Using measurment row
+        df = measurement_row
+        
+        
+        # Make sure that mrn column is either dropped or not inputted! 
+        if 'mrn' in df.columns:
+            df = df.drop(columns=['mrn'])
         
         df['sex'] = df['sex'].map({'f': 0, 'm': 1})
         for col in df.columns:
             if 'creatinine_date' in col:
                 df[col] = pd.to_datetime(df[col],format= '%m/%d/%y %H:%M:%S', errors='coerce')  # Convert to datetime
 
-        # This is only used when running on personal environment, where test.csv includes labels.
+        # This is only used when running on personal environment, where test.csv includes ground truth labels.
         if 'aki' in df.columns:
             df['aki'] = df['aki'].map({'n': 0, 'y': 1}) # Convert to binary 
             y = df['aki'].values  # Extract labels
@@ -119,7 +145,7 @@ class Model:
         # 🔹 Extract the same creatinine result columns as training
         creatinine_columns = [col for col in df.columns if 'creatinine_result' in col]
         
-        # 🔹 **Add derived features: median & max creatinine values**
+        # 🔹 Add derived features: median & max creatinine values 
         df['creatinine_median'] = df[creatinine_columns].median(axis=1)
         df['creatinine_max'] = df[creatinine_columns].max(axis=1)
         
@@ -131,7 +157,7 @@ class Model:
         df_reversed = df_reversed.iloc[:, :expected_columns_len]  # Keeps only the first `expected_columns_len` columns
         
         
-        # Pad if test is smaller than training!!! 
+        # Pad if test is smaller than training
         for col in expected_columns:
             if col not in df.columns:
                 df[col] = 0  # pad with 0
@@ -140,7 +166,6 @@ class Model:
         
         # Convert to tensors
         X = df_reversed
-
         X = X.to_numpy()  
         y = np.array(y) 
         X_tensor = torch.tensor(X, dtype=torch.float32)
@@ -148,7 +173,7 @@ class Model:
 
 
         return X_tensor, y
-
+    
     def predict_aki(self, measurement_vector):
 
         """
@@ -172,7 +197,7 @@ class Model:
               
             """
         # Preprocess then run on trained model 
-        X_test, y = self.test_preprocessing(self.filepath, self.expected_columns)
+        X_test, y = self.test_preprocessing(measurement_vector, self.expected_columns)
         
         
         
@@ -183,8 +208,8 @@ class Model:
         predictions = predictions.detach().numpy()
         
         # Convert to binary
-        return (predictions > 0.3).astype(int) # Lower than usual because we care more about FN 
-        #TODO: check this 
+        return (predictions > 0.3).astype(int) # Lower than usual because we care more about F3 
+        
         
         
   
