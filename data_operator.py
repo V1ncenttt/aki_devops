@@ -10,19 +10,19 @@ class DataOperator:
         with open('expected_columns.json', 'r') as f: # there should be a better way to do this check i think, maybe not even necessary, see later
             self.expected_columns = json.load(f) # TODO: understand this!
 
-    def add_patient(self, mrn, age=None, sex=None):
+    def get_past_measurements(self, mrn, creatinine_value, test_time):
         """_summary_
 
         Args:
             mrn (_type_): _description_
             age (_type_, optional): _description_. Defaults to None.
         """
-        return self.database.add_patient(mrn, age,sex)
+        return self.database.get_past_measurements(self, mrn, creatinine_value, test_time)
 
     def process_patient(self, mrn, creatinine_value, test_time):
         logging.info(f"[WORKER] Processing Patient {mrn} at {test_time}...")
 
-        patient_vector = self.model.get_past_measurements(mrn, creatinine_value, test_time)
+        patient_vector = self.datget_past_measurements(mrn, creatinine_value, test_time)
 
         alert_needed = self.model.predict_aki(patient_vector)
         logging.info(f"prediction_made:{alert_needed}")
@@ -30,7 +30,7 @@ class DataOperator:
         if alert_needed:
             self.send_pager_alert(mrn, test_time)
 
-        self.model.add_measurement(mrn, creatinine_value, test_time)
+        self.database.add_measurement(mrn, creatinine_value, test_time)
 
     def process_adt_message(self, message):  
         mrn = message[1]["mrn"]
@@ -38,7 +38,7 @@ class DataOperator:
         age = message[1]["age"]
         sex = message[1]['gender']
 
-        self.add_patient(mrn, age, sex)
+        self.database.add_patient(mrn, age, sex)
 
         logging.info(f"Patient {name} with MRN {mrn} added to the database")
 

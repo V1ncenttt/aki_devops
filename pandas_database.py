@@ -47,6 +47,58 @@ class PandasDatabase:
 
         # TODO: should we still do this??
         # df.fillna(0, inplace=True) # Fill null values with 0 
+        
+    async def get_past_measurements(self, mrn, creatinine_value, test_time):
+        """_summary_
+
+        Args:
+            mrn (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        patient_vector = self.database.get_data(mrn)
+
+        if patient_vector is None or patient_vector.empty:
+            # print(f"[WARNING] Patient {mrn} not found in database. Creating a new entry.")
+            return None  # Handle case where patient does not exist
+        
+        
+        # Convert Series to DataFrame if needed
+        if isinstance(patient_vector, pd.Series):
+            patient_vector = patient_vector.to_frame().T  # Convert to DataFrame
+
+        # print(patient_vector)  # Debugging print to verify it is a DataFrame
+
+        ### FIND LAST INDEX USED
+        # Find the last used creatinine_date column
+        
+        date_cols = [col for col in patient_vector.columns if isinstance(col, str) and "creatinine_date" in col]
+
+        
+        last_used_n = -1  # Default if no columns exist
+        
+        for col in date_cols:
+            n = int(col.split("_")[-1])  # Extract the number from creatinine_date_n
+            # print(patient_vector[col])
+            if not patient_vector[col].isna().all(): # Check if it has a value
+                last_used_n = max(last_used_n, n)
+                
+        # Next available index
+        next_n = last_used_n + 1
+
+        # Column names for the new test
+        new_date_col = f"creatinine_date_{next_n}"
+        new_result_col = f"creatinine_result_{next_n}"
+
+
+        # Append the new measurement to the patient vector does NOT modify the dataframe
+        patient_vector[new_date_col] = test_time
+        patient_vector[new_result_col] = creatinine_value
+        
+        
+        #Convert to tensor
+        return patient_vector
 
     
 

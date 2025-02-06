@@ -10,6 +10,7 @@ import numpy as np
 import json 
 from pandas_database import PandasDatabase
 import logging
+from database import Database
 
 
 ######################################
@@ -30,7 +31,7 @@ class SimpleNN(nn.Module):
 class Model:
     """_summary_"""
 
-    def __init__(self, database):
+    def __init__(self, database: Database):
         """_summary_
 
         Args:
@@ -45,69 +46,7 @@ class Model:
         self.model.load_state_dict(torch.load('model.pth'))  # Load trained weights
         self.model.eval()
 
-    def add_measurement(self, mrn, measurement, test_date):
-        """_summary_
 
-        Args:
-            mrn (_type_): _description_
-            measurement (_type_): _description_
-            test_date (_type_): _description_
-        """
-        return self.database.add_data(mrn, (measurement, test_date))
-    
-    def get_past_measurements(self, mrn, creatinine_value, test_time):
-        """_summary_
-
-        Args:
-            mrn (_type_): _description_
-
-        Returns:
-            _type_: _description_
-        """
-        patient_vector = self.database.get_data(mrn)
-        
-        # if patient_data is None:
-        #     return None  # Return None if no past data is found
-        
-        
-        ### FIND LAST INDEX USED
-        # Find the last used creatinine_date column
-        print(patient_vector)
-        date_cols = [col for col in patient_vector if "creatinine_date" in col]
-        
-        last_used_n = -1  # Default if no columns exist
-        
-        for col in date_cols:
-            n = int(col.split("_")[-1])  # Extract the number from creatinine_date_n
-            print(patient_vector[col])
-            if not patient_vector[col].empty:  # Check if it has a value
-                last_used_n = max(last_used_n, n)
-                
-        # Next available index
-        next_n = last_used_n + 1
-
-        # Column names for the new test
-        new_date_col = f"creatinine_date_{next_n}"
-        new_result_col = f"creatinine_result_{next_n}"
-
-
-        # Append the new measurement to the patient vector does NOT modify the dataframe
-        patient_vector[new_date_col] = test_time
-        patient_vector[new_result_col] = creatinine_value
-        
-        
-        #Convert to tensor
-        return patient_vector
-    
-    def add_patient(self, mrn, age=None, sex=None):
-        """_summary_
-
-        Args:
-            mrn (_type_): _description_
-            age (_type_, optional): _description_. Defaults to None.
-        """
-        return self.database.add_patient(mrn, age,sex)
-        
         
     def test_preprocessing(self, measurement_row, expected_columns):
         """
@@ -145,6 +84,7 @@ class Model:
         else: y = 0
         
         # Fill nan values with 0
+        df = df.apply(pd.to_numeric, errors='coerce')  # Convert all columns to numeric, replacing invalids with NaN
         df.fillna(0, inplace=True)
         
         # 🔹 Extract the same creatinine result columns as training
