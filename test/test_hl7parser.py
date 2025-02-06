@@ -124,5 +124,10 @@ class TestHL7Parser(unittest.TestCase):
 
         self.assertIn("||ACK^R01||2.5\rMSA|AA|\r\x1c\r", ack)
 
+    def test_singleton(self):
+        """Test that HL7Parser is a singleton."""
+        parser = HL7Parser()
+        self.assertIs(self.parser, parser)
+
 if __name__ == '__main__':
     unittest.main()

@@ -262,11 +262,4 @@ class HL7Parser:
 
         return None, None, None
 
-if __name__ == "__main__":
-    # Check if singleton actually works
-    parser1 = HL7Parser()
 
-    parser2 = HL7Parser()
-
-    assert parser1 is parser2, "Singleton pattern not working"
-    print("Singleton pattern working") #TODO: delete
