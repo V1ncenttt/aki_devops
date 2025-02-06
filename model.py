@@ -43,7 +43,7 @@ class Model:
         
         self.expected_columns_len = len(self.expected_columns)  # Ensure we get the correct number of features
         self.model = SimpleNN(input_size=self.expected_columns_len, hidden_size=64)  # Match training definition
-        self.model.load_state_dict(torch.load('model.pth'))  # Load trained weights
+        self.model.load_state_dict(torch.load('model.pth', weights_only=True))  # Load trained weights
         self.model.eval()
 
     def add_measurement(self, mrn, measurement, test_date):
