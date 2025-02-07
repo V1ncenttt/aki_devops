@@ -7,7 +7,8 @@ import sys
 import numpy as np
 import pandas as pd
 import mlflow
-import mlflow.sklearn  # For tracking Scikit-learn models
+import mlflow.sklearn
+from mlflow import MlflowClient
 from xgboost import XGBClassifier
 from sklearn.preprocessing import LabelEncoder
 from joblib import dump, load
@@ -15,7 +16,7 @@ from sklearn.metrics import accuracy_score, fbeta_score
 
 def add_padding(df):
     """Ensures the dataframe has a constant length of 50."""
-    for i in range(((len(df.columns)-2)//2), 50):
+    for i in range(((len(df.columns) - 2) // 2), 50):
         df[f'creatinine_date_{i}'] = 0
         df[f'creatinine_result_{i}'] = 0
     return df
@@ -65,19 +66,18 @@ def preprocess(df, train):
 def train(flags):
     """Train an XGBClassifier and log the experiment using MLflow."""
     try:
-        train_df = pd.read_csv(flags.train) 
+        train_df = pd.read_csv(flags.train)
     except Exception as e:
         print(f"Error loading training data: {e}")
         sys.exit(1)
 
     x_train, y_train = preprocess(train_df, train=True)
 
-    # MLflow Logging
+    model = XGBClassifier(eval_metric='logloss', scale_pos_weight=100, max_depth=5, learning_rate=0.05, n_estimators=100)
+    model.fit(x_train, y_train)
+
     if flags.mlflow:
         with mlflow.start_run():
-            model = XGBClassifier(eval_metric='logloss', scale_pos_weight=100, max_depth=5, learning_rate=0.05, n_estimators=100)
-            model.fit(x_train, y_train)
-
             # Log parameters
             mlflow.log_params({
                 "eval_metric": "logloss",
@@ -89,13 +89,11 @@ def train(flags):
 
             # Log model
             mlflow.sklearn.log_model(model, "aki_model")
+            mlflow.log_artifact(flags.train)
 
             # Save locally
             dump(model, 'aki_detection.joblib')
-    else:
-        model = XGBClassifier(eval_metric='logloss', scale_pos_weight=100, max_depth=5, learning_rate=0.05, n_estimators=100)
-        model.fit(x_train, y_train)
-        
+
     return model
 
 def eval(flags):
@@ -108,7 +106,7 @@ def eval(flags):
     y_test = le.fit_transform(y_test['aki'])
 
     accuracy = accuracy_score(y_test, y_pred)
-    f3 = fbeta_score(y_test, y_pred, beta=3) 
+    f3 = fbeta_score(y_test, y_pred, beta=3)
 
     # Log metrics in MLflow
     if flags.mlflow:
@@ -138,8 +136,18 @@ def main():
 
     if flags.mlflow:
         print("Starting MLflow...")
-        mlflow.set_tracking_uri("http://localhost:8000")  # Change if using a remote server
-        mlflow.set_experiment("AKI Detection")  # Define experiment name
+        
+        tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
+        token = os.getenv("MLFLOW_TRACKING_TOKEN")
+
+        os.environ["MLFLOW_TRACKING_TOKEN"] = token
+        mlflow.set_tracking_uri(tracking_uri)
+        
+        client = MlflowClient(tracking_uri=tracking_uri)
+        experiment_name = "AKI Detection"
+        if not client.get_experiment_by_name(experiment_name):
+            client.create_experiment(experiment_name)
+        mlflow.set_experiment(experiment_name)
         print("MLflow started!")
 
     if len(flags.train) > 0:

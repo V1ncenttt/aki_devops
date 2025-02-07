@@ -3,3 +3,4 @@ settings.json
 coverage_html_report/*
 .coverage
 .DS_Store
+mlruns/*
