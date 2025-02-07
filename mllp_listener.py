@@ -32,7 +32,7 @@ import os
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 class MllpListener:
-     """
+    """
     MLLP Listener for HL7 Messages
     ===============================
     This class listens for HL7 messages over an MLLP connection, processes them, 
@@ -94,44 +94,44 @@ class MllpListener:
 
 
     def hl7_listen(self):
-           """
+        """
         Listens for HL7 messages, processes them, and stores valid messages in the message queue.
         
         Receives data over the MLLP connection, extracts messages, and sends an acknowledgment (ACK).
         """
 
-            buffer = b""
-            while True:
-                try:
-                    data = self.client_socket.recv(1024)
-                    if not data:
-                        logging.info("[-] No more data, closing connection.")
-                        self.shutdown()
+        buffer = b""
+        while True:
+            try:
+                data = self.client_socket.recv(1024)
+                if not data:
+                    logging.info("[-] No more data, closing connection.")
+                    self.shutdown()
 
-                    buffer += data
+                buffer += data
 
-                    while START_BLOCK in buffer and END_BLOCK in buffer:
-                        start_index = buffer.index(START_BLOCK) + 1
-                        end_index = buffer.index(END_BLOCK)
-                        hl7_message = buffer[start_index:end_index].decode("utf-8").strip()
-                        buffer = buffer[end_index + len(END_BLOCK) :]
+                while START_BLOCK in buffer and END_BLOCK in buffer:
+                    start_index = buffer.index(START_BLOCK) + 1
+                    end_index = buffer.index(END_BLOCK)
+                    hl7_message = buffer[start_index:end_index].decode("utf-8").strip()
+                    buffer = buffer[end_index + len(END_BLOCK) :]
 
-                        parsed_message = self.parser.parse(hl7_message)
-                        
-                        
-                        if parsed_message is None or parsed_message[0] is None:
-                            logging.error("Received invalid HL7 message or unknown message type.")
-                            break  # Prevents further errors
+                    parsed_message = self.parser.parse(hl7_message)
+                    
+                    
+                    if parsed_message is None or parsed_message[0] is None:
+                        logging.error("Received invalid HL7 message or unknown message type.")
+                        break  # Prevents further errors
 
-                        self.msg_queue.append(parsed_message)
+                    self.msg_queue.append(parsed_message)
 
-                        ack_message = self.parser.generate_hl7_ack(hl7_message)
-                        self.client_socket.sendall(ack_message)
-                        logging.info(f"[ACK SENT]")
-                        return
+                    ack_message = self.parser.generate_hl7_ack(hl7_message)
+                    self.client_socket.sendall(ack_message)
+                    logging.info(f"[ACK SENT]")
+                    return
 
-                except socket.timeout:
-                    logging.warning("[-] Read timeout. Closing connection.")
+            except socket.timeout:
+                logging.warning("[-] Read timeout. Closing connection.")
 
     
     def run(self):
