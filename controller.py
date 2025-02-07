@@ -74,7 +74,7 @@ class Controller:
 
         while True:
             try:
-                client_socket = socket.socket(socket.AF_INET, socke,t.SOCK_STREAM)
+                client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 client_socket.settimeout(10)
                 client_socket.connect((mllp_host, mllp_port))
                 logging.info("[+] Connected to HL7 Simulator!")
