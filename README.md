@@ -3,7 +3,7 @@
  <img width=200px height=200px src="img/aki.png" alt="Project logo"></a>
 </p>
 
-<h3 align="center">AKI Alerting System</h3>
+<h1 align="center">AKI Alerting System</h1>
 
 <div align="center">
 
@@ -69,6 +69,13 @@ These instructions will get you a copy of the project up and running on your loc
 ### Prerequisites
 
 All dependencies are automatically installed using the requirements.txt file, so no manual installation is required.
+
+Libraries used:
+- numpy: Python package for array computing. Consistently maintained and documented. (Risk Level: LOW)
+- scikit-learn: Python package for machine learning, built on top of SciPy. Maintained by volunteers. (Risk Level: LOW)
+- pandas: Python package for working with dataframes. Highly used and updated. (Risk Level: LOW)
+- requests: Python package for making HTTP requests in a simple and human-friendly way. Widely used for web scraping and interacting with APIs. Robust documentation and active maintenance by a community of contributors. (Risk Level: LOW)
+- xgboost: Python package for optimized distributed gradient boosting, commonly used for machine learning tasks that require efficient and scalable algorithms. Regularly maintained with a strong focus on performance and accuracy in predictive modeling. (Risk Level: LOW)
 
 ### Installing
 
