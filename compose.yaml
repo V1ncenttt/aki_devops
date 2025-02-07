@@ -15,7 +15,7 @@ services:
       driver: "local"
     volumes:
       - ./logs/simulation.log:/var/log/simulation.log
-      - ./simulation:/var/simulation/
+      - ./simulation:/var/simulation
 
   aki-system:
     build:

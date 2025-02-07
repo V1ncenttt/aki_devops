@@ -13,6 +13,7 @@ VERSION = "0.0.6"
 MLLP_BUFFER_SIZE = 1024
 MLLP_TIMEOUT_SECONDS = 10
 SHUTDOWN_POLL_INTERVAL_SECONDS = 2
+RESULTS_QUEUE=[]
 
 def serve_mllp_client(client, source, messages, shutdown_mllp, short_messages):
     i = 0
@@ -180,11 +181,10 @@ class PagerRequestHandler(http.server.BaseHTTPRequestHandler):
                 return
         if timestamp:
             print(f"pager: paging for MRN {mrn} at {timestamp}")
-            self.results.append((mrn, timestamp))
-            #print("saved result")
+            RESULTS_QUEUE.append((mrn, timestamp))
         else:
             print(f"pager: paging for MRN {mrn}")
-            self.results.append((mrn, ""))
+            RESULTS_QUEUE.append((mrn, timestamp))
         self.send_response(http.HTTPStatus.OK)
         self.send_header("Content-Type", "text/plain")
         self.end_headers()
@@ -201,13 +201,6 @@ class PagerRequestHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Type", "text/plain")
         self.end_headers()
         self.wfile.write(b"ok\n")
-
-        #write results of test
-        file_path = "/var/log/simulation.log/aki_predictions.csv"
-        with open(file_path, "w", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow(["mrn", "timestamp"])
-            writer.writerows(self.results)
         self.shutdown()
 
     def log_message(*args):
@@ -219,25 +212,41 @@ def main():
     parser.add_argument("--mllp", default=8440, type=int, help="Port on which to replay HL7 messages via MLLP")
     parser.add_argument("--pager", default=8441, type=int, help="Post on which to listen for pager requests via HTTP")
     parser.add_argument("--short_messages", default=False, action="store_true", help="Encourage all outgoing messages to be split in two")
+    parser.add_argument("--run_simulation", default=True, action="store_true", help="Flag to run the simulation, by default the simulation is run")
+    parser.add_argument("--write_results", default=True, action="store_true", help="Flag to write the results of the simulation, by default the results are written")
+    parser.add_argument("--evaluate", default=True, action="store_true", help="Flag to evaluate the results last written to aki_predictions.csv by simulation and compare with ground truths in aki.csv")
     flags = parser.parse_args()
-    hl7_messages = read_hl7_messages(flags.messages)
-    shutdown_event = threading.Event()
-    mllp_thread = threading.Thread(target=run_mllp_server, args=("0.0.0.0", flags.mllp, hl7_messages, shutdown_event, flags.short_messages), daemon=True)
-    mllp_thread.start()
-    pager = None
-    def shutdown():
-        shutdown_event.set()
-        print("pager: graceful shutdown")
-        pager.shutdown()
-    signal.signal(signal.SIGTERM, lambda signal, frame: shutdown())
-    def new_pager_handler(*args, **kwargs):
-        return PagerRequestHandler(shutdown, *args, **kwargs)
-    pager = http.server.ThreadingHTTPServer(("0.0.0.0", flags.pager), new_pager_handler)
-    print(f"pager: listening on 0.0.0.0:{flags.pager}")
-    pager_thread = threading.Thread(target=pager.serve_forever, args=(), kwargs={"poll_interval": SHUTDOWN_POLL_INTERVAL_SECONDS}, daemon=True)
-    pager_thread.start()
-    mllp_thread.join()
-    pager_thread.join()
+
+    if flags.run_simulation:
+        hl7_messages = read_hl7_messages(flags.messages)
+        shutdown_event = threading.Event()
+        mllp_thread = threading.Thread(target=run_mllp_server, args=("0.0.0.0", flags.mllp, hl7_messages, shutdown_event, flags.short_messages), daemon=True)
+        mllp_thread.start()
+        pager = None
+        def shutdown():
+            shutdown_event.set()
+            print("pager: graceful shutdown")
+            pager.shutdown()
+        signal.signal(signal.SIGTERM, lambda signal, frame: shutdown())
+        def new_pager_handler(*args, **kwargs):
+            return PagerRequestHandler(shutdown, *args, **kwargs)
+        pager = http.server.ThreadingHTTPServer(("0.0.0.0", flags.pager), new_pager_handler)
+        print(f"pager: listening on 0.0.0.0:{flags.pager}")
+        pager_thread = threading.Thread(target=pager.serve_forever, args=(), kwargs={"poll_interval": SHUTDOWN_POLL_INTERVAL_SECONDS}, daemon=True)
+        pager_thread.start()
+        mllp_thread.join()
+        pager_thread.join()
+        
+        if flags.write_results:
+            #write results of test
+            file_path = "/var/simulation/aki_predictions.csv"
+            with open(file_path, "w", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerow(["mrn", "date"])
+                writer.writerows(RESULTS_QUEUE)
+    
+    if flags.evaluate:
+        return
 
 if __name__ == "__main__":
     main()
