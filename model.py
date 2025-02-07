@@ -79,7 +79,7 @@ class Model:
         #df = self.process_dates(df)
         #df = self.add_padding(df)
 
-        df = df.fillna(0)
+        #df = df.fillna(0)
         df['creatinine_mean'] = df[results_cols].mean(axis=1)
         df['creatinine_median'] = df[results_cols].median(axis=1, skipna=True)
         df['creatinine_max'] = df[results_cols].max(axis=1)
@@ -91,6 +91,7 @@ class Model:
         df['rv2_ratio'] = df['most_recent'] / df['creatinine_median']
         df = df.drop(columns=results_cols)
         df = df.drop(columns=date_cols)
+        df = df.fillna(0)
         return df
 
     def preprocess(self, df):
@@ -117,34 +118,57 @@ class Model:
             exit()
 
 if __name__=="__main__":
-    from sklearn.metrics import fbeta_score
-    dummy_queue = []
-    model = Model(dummy_queue)
-     
-    # EXTRACT GROUND TRUTH VALUES FROM TEST.CSV!!!!
-    # Load test dataset
-    df = pd.read_csv("test.csv")
-    # Extract true AKI labels and convert 'y' to 1, 'n' to 0
-    aki_data = np.where(df['aki'] == 'y', 1, 0).astype(int)
-    df = df.drop(columns="aki")
+    RUN_BENCHMARK = False
+    ANALYZE=True
 
-    # Save as CSV without column name
-    #np.savetxt("aki_labels.csv", aki_data, fmt='%d', delimiter=',')
+    if RUN_BENCHMARK:
+        from sklearn.metrics import fbeta_score
+        dummy_queue = []
+        model = Model(dummy_queue)
+        
+        # EXTRACT GROUND TRUTH VALUES FROM TEST.CSV!!!!
+        # Load test dataset
+        df = pd.read_csv("test.csv")
+        # Extract true AKI labels and convert 'y' to 1, 'n' to 0
+        aki_data = np.where(df['aki'] == 'y', 1, 0).astype(int)
+        df = df.drop(columns="aki")
 
-    # Run model prediction on the test dataset
-    predictions = []
-    for i in range(len(df)):
-        print(f"Progress: {i+1:03d}/{len(df)}")
-        row = df.iloc[[i]].copy()
-        prediction = model.predict_aki(row)
-        predictions.append(prediction)
+        # Save as CSV without column name
+        #np.savetxt("aki_labels.csv", aki_data, fmt='%d', delimiter=',')
 
-    # Load saved labels without headers
-    #data = np.loadtxt('aki_labels.csv', delimiter=',', dtype=int)
-    print(f"1s: {sum(predictions)}, length:{len(predictions)}")
+        # Run model prediction on the test dataset
+        predictions = []
+        for i in range(len(df)):
+            print(f"Progress: {i+1:03d}/{len(df)}")
+            row = df.iloc[[i]].copy()
+            prediction = model.predict_aki(row)
+            predictions.append(prediction)
+            print(f"Prediction: {prediction}")
 
-    # Compute F3 Score
-    f3_score_test = fbeta_score(aki_data, predictions, beta=3, zero_division=1)
+        # Load saved labels without headers
+        #data = np.loadtxt('aki_labels.csv', delimiter=',', dtype=int)
+        print(f"1s: {sum(predictions)}, length:{len(predictions)}")
 
-    print('Final F3 score:', f3_score_test)
+        # Compute F3 Score
+        f3_score_test = fbeta_score(aki_data, predictions, beta=3, zero_division=1)
+
+        print('Final F3 score:', f3_score_test)
+
+    if ANALYZE:
+        import pickle
+
+        # Load predict_queue from the pickle file
+        with open("data_operator_output.pkl", "rb") as file:
+            predict_queue = pickle.load(file)
+
+        model = Model(predict_queue)
+
+        while predict_queue:
+            #runitup
+            result = model.run()
+            if result is not None:
+                print("Aki Detected")
+            else:
+                print("No Aki detected")
+                
 

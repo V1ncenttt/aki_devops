@@ -22,6 +22,7 @@ COPY mllp_listener.py /aki-system/
 COPY data_operator.py /aki-system/
 COPY model.py /aki-system/
 COPY pager.py /aki-system/
+COPY test_output_mllp.txt /aki-system/
 
 
 EXPOSE 8440

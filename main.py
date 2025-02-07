@@ -41,6 +41,21 @@ def main():
     # ---------------------------------------------------- #
     # Running the system (stage)
     # ---------------------------------------------------- #
+    TEST = True
+    if TEST:
+        with open("test_output_mllp.txt", "r") as f:
+            messages = [eval(line.strip()) for line in f]
+        
+        for message in messages:
+            msg_queue.append(message)
+        
+        while True:
+            keep_running = data_operator.run()
+            if keep_running:
+                page_team = model.run()
+                if not (page_team == None):
+                    pager.run(*page_team)
+    exit()
     try:
         while True:
             mllp_listener.run()
@@ -68,6 +83,5 @@ def main():
 if __name__ == "__main__":
     # run system
     main()
-   
     # TODO: In future add preventative measures for system crashes, not relevant for this week however.
 

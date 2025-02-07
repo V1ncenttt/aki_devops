@@ -68,6 +68,7 @@ class DataOperator:
             return self.process_message(message)
         
 if __name__=="__main__":
+    import pickle
     msg_queue = []
     predict_queue = []
     data_operator = DataOperator(msg_queue, predict_queue)
@@ -79,4 +80,8 @@ if __name__=="__main__":
         msg_queue.append(message)
     
     while msg_queue:
-        data_operator.run()
+        keep_running = data_operator.run()
+        
+        # write the predict queue stuff
+        with open("data_operator_output.pkl", "wb") as file:
+            pickle.dump(predict_queue, file)
