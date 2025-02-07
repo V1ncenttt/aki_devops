@@ -66,3 +66,10 @@ class DataOperator:
             return  # Stop errors
         else:
             return self.process_message(message)
+        
+if __name__=="__main__":
+    with open("test_output_mllp.txt", "r") as f:
+        messages = [eval(line.strip()) for line in f]
+    
+    for message in messages:
+        print(f"{message} has type {type(message)}")
