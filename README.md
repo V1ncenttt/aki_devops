@@ -42,7 +42,7 @@ The system processes historical and live blood test data, detects potential AKI 
 
 ## Repository Structure <a name = "Repository Structure"></a>
 Our repository follows a modular structure, ensuring clear separation of core application logic, model training, testing, and simulation. This improves maintainability, scalability, and deployment efficiency.
-
+```
 ├── data/                  # Training data and historical patient records
 ├── img/                   # Images and visualizations (e.g., for documentation)
 ├── model/                 # Model training scripts and related files
@@ -66,7 +66,7 @@ Our repository follows a modular structure, ensuring clear separation of core ap
 ├── makefile               # Makefile for automating tasks
 ├── requirements.txt       # Python dependencies
 ├── run_tests.py           # Test runner for unit tests
-
+```
 1. src/ – Core Application
 The main logic of the system is contained within the src/ folder. It includes:
 
