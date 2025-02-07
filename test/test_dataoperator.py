@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import MagicMock
 import pandas as pd
-from pandas_database import PandasDatabase
-from data_operator import DataOperator
+from src.pandas_database import PandasDatabase
+from src.data_operator import DataOperator
 
 
 class TestDataOperator(unittest.TestCase):

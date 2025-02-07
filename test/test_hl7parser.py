@@ -1,6 +1,6 @@
 import unittest
 from datetime import datetime
-from parser import HL7Parser
+from src.parser import HL7Parser
 
 
 class TestHL7Parser(unittest.TestCase):

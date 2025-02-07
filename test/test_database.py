@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-from pandas_database import PandasDatabase
+from src.pandas_database import PandasDatabase
 
 
 class TestDatabase(unittest.TestCase):
@@ -10,7 +10,7 @@ class TestDatabase(unittest.TestCase):
 
     def setUp(self):
         """Initialize Database before each test."""
-        self.db = PandasDatabase("history.csv")
+        self.db = PandasDatabase("data/history.csv")
 
     # TODO: Maybe there's a pb with how dates are handled when stored in the db?????
     def test_get_data(self):
