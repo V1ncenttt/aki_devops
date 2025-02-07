@@ -18,13 +18,14 @@
 ## Table of Contents
 
 - [About](#about)
+- [Repository Structure](#Repository_Structure)
 - [Getting Started](#getting_started)
-- [Deployment](#deployment)
 - [Usage](#usage)
-- [TODO](../TODO.md)
-- [Contributing](../CONTRIBUTING.md)
+- [Running the Tests](#running_tests)
+- [Model Training](#training)
+- [Deployment](#deployment)
+- [Built Using](#built_using)
 - [Authors](#authors)
-- [Acknowledgments](#acknowledgement)
 
 ## About <a name = "about"></a>
 
@@ -104,7 +105,7 @@ If you want to add a coverage report, then run:
 make unittest_coverage
 ```
 
-## ⛏️ Model Training <a name = "model_training"></a>
+## Model Training <a name = "model_training"></a>
 
 If you want to train and evaluate the model, run:
 
