@@ -1,8 +1,8 @@
 services:
   message-simulator:
     build:
-      context: .
-      dockerfile: Dockerfile.simulator
+      context: ./simulation
+      dockerfile: Dockerfile.simulation
     container_name: message_sim
     networks:
       - my_network
@@ -14,7 +14,7 @@ services:
     logging:
       driver: "local"
     volumes:
-      - ./logs/simulator.log:/var/log/simulator.log
+      - ./logs/simulation.log:/var/log/simulation.log
 
   aki-system:
     build:
