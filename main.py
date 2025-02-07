@@ -19,13 +19,7 @@ from mllp_listener import MllpListener
 from model import Model
 from data_operator import DataOperator
 from pager import Pager
-
-
-# library imports
-#import argparse
 import os
-import asyncio
-import logging
 
 def main():
     """

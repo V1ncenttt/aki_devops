@@ -24,7 +24,6 @@ Example:
 
 import logging
 from database import Database
-import json 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 

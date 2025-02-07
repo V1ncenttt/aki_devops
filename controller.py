@@ -21,15 +21,12 @@ Example:
 
 """
 
-import os
 import requests
 import logging
 import socket
 import time
 from model import Model
 from parser import HL7Parser, START_BLOCK, END_BLOCK
-import os
-
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 

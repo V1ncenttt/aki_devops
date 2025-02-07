@@ -22,7 +22,6 @@ Example:
 
 """
 
-import csv
 from collections import defaultdict
 from database import Database
 import pandas as pd
