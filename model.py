@@ -52,7 +52,7 @@ class Model:
             Preprocess input of the network. Runs on training data with AKI column.
 
             Arguments:
-                - training_filepath {string} -- csv file path
+                - training_filepath {string} -- csv file path # TODO: CHANGE THIS DESCRIPTION
                 - expected_columns {list} -- Expected columns based on the training data
                     
 
@@ -153,7 +153,7 @@ class Model:
         logging.info(f"prediction: {predictions}")
         
         # Convert to binary
-        return (predictions > 0.3).astype(int) # Lower than usual because we care more about F3 
+        return int((predictions.item()) > 0.3) # Lower than usual because we care more about F3 
         
     def run(self):
         (mrn, test_time, patient_vector) = self.predict_queue.pop(0) # THIS IS SUPER INEFFICIENT LATER CHANGE USEAGE OF TYPE OF QUEUE FOR SPEED
@@ -163,3 +163,32 @@ class Model:
             return None
 
 
+if __name__=="__main__":
+    from sklearn.metrics import fbeta_score
+    dummy_queue = []
+    model = Model(dummy_queue)
+     
+    # EXTRACT GROUND TRUTH VALUES FROM TEST.CSV!!!!
+    # Load test dataset
+    df = pd.read_csv("test.csv")
+    # Extract true AKI labels and convert 'y' to 1, 'n' to 0
+    aki_data = np.where(df['aki'] == 'y', 1, 0).astype(int)
+
+    # Save as CSV without column name
+    #np.savetxt("aki_labels.csv", aki_data, fmt='%d', delimiter=',')
+
+    # Run model prediction on the test dataset
+    predictions = []
+    for i in range(len(df)):
+        print(f"Progress: {i+1:03d}/{len(df)}")
+        row = df.iloc[[i]].copy()
+        prediction = model.predict_aki(row)
+        predictions.append(prediction)
+
+    # Load saved labels without headers
+    #data = np.loadtxt('aki_labels.csv', delimiter=',', dtype=int)
+
+    # Compute F3 Score
+    f3_score_test = fbeta_score(aki_data, predictions, beta=3, zero_division=1)
+
+    print('Final F3 score:', f3_score_test)
