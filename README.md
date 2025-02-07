@@ -116,11 +116,11 @@ Add additional notes about how to deploy this on a live system.
 
 ## ✍️ Authors <a name = "authors"></a>
 
-- [Kerim Birgi](kerim.birgi24@imperial.ac.uk) - Group Member
-- [Zala Breznik](zala.breznik24@imperial.ac.uk) - Group Member
-- [Lorenz Heiler](lorenz.heiler24@imperial.ac.uk) - Group Member
-- [Vincent Lefeuve](vincent.lefeuve24@imperial.ac.uk) - Group Member
-- [Alison Lupton](alison.lupton24@imperial.ac.uk) - Group Member
+- [Kerim Birgi](mailto:kerim.birgi24@imperial.ac.uk) - Group Member
+- [Zala Breznik](mailto:zala.breznik24@imperial.ac.uk) - Group Member
+- [Lorenz Heiler](mailto:lorenz.heiler24@imperial.ac.uk) - Group Member
+- [Vincent Lefeuve](mailto:vincent.lefeuve24@imperial.ac.uk) - Group Member
+- [Alison Lupton](mailto:alison.lupton24@imperial.ac.uk) - Group Member
 
 
 
