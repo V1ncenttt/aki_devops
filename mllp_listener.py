@@ -8,19 +8,14 @@ from parser import HL7Parser, START_BLOCK, END_BLOCK
 
 import os
 
-# Set the correct host for the HL7 Simulator
-# Set the correct host for the HL7 Simulator
-SIMULATOR_HOST = os.getenv("SIMULATOR_HOST", "message-simulator")  # Use actual container name
-SIMULATOR_PORT = int(os.getenv("SIMULATOR_PORT", "8440"))  # Ensure it's an int
-
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 #TODO: Add docstrings to the Controller class
 #TODO: Make sure failures are handled properly, especially don't re-add measurements if the model fails
 class MllpListener:
 
-    def __init__(self, mllp_port, msg_queue):
+    def __init__(self, mllp_address, msg_queue):
         self.parser = HL7Parser() #dunno if this is actually needed
-        self.mllp_port = mllp_port
+        self.mllp_address = mllp_address
         self.msg_queue = msg_queue
         self.client_socket = None
         self.open_connection()
@@ -28,15 +23,17 @@ class MllpListener:
     def open_connection(self):
         while True:
             try:
-                logging.info(f"[*] Connecting to HL7 Simulator at {SIMULATOR_HOST}:{SIMULATOR_PORT}...")
+                mllp_host = self.mllp_address.split(":")[0]
+                mllp_port = int(self.mllp_address.split(":")[1])
+                logging.info(f"[*] Connecting to HL7 Simulator at {mllp_host}:{mllp_port}...")
                 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 client_socket.settimeout(10)
-                client_socket.connect((SIMULATOR_HOST, SIMULATOR_PORT))
+                client_socket.connect((mllp_host, mllp_port))
                 self.client_socket = client_socket
                 logging.info("[+] Connected to HL7 Simulator!")
                 break
             except (ConnectionRefusedError, ConnectionResetError):
-                logging.error(f"[-] Could not connect to {SIMULATOR_HOST}:{SIMULATOR_PORT}, retrying in 5s...")
+                logging.error(f"[-] Could not connect to {mllp_host}:{mllp_port}, retrying in 5s...")
                 time.sleep(5)
         return
 
