@@ -49,7 +49,6 @@ class PandasDatabase(Database):
 
         self.df = pd.read_csv(filename, date_format="%m/%d/%y %H:%M:%S")
         self.df.set_index("mrn", inplace=True)  # Set MRN as the index
-        # self.history_preprocessing()
 
         # Add empty 'age' and 'sex' columns
         self.df.insert(1, "age", None)
