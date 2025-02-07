@@ -118,7 +118,7 @@ class HL7Parser:
                 - birth_date.year
                 - ((today.month, today.day) < (birth_date.month, birth_date.day))
             )
-        except:  # TODO: Add specific exception
+        except ValueError:  
             return None
 
     def parse(self, message: str) -> tuple[str, dict, list]:
@@ -175,7 +175,7 @@ class HL7Parser:
 
             return self._generate_output()
 
-        except Exception as e:  # TODO: Add specific exception
+        except (TypeError, IndexError, ValueError) as e:
             print(f"Error parsing HL7 message: {e}")
 
             return None, None, None
