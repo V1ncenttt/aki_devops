@@ -31,11 +31,12 @@ def main():
     predict_queue = []
     patient_data = {}
 
+    pager = Pager(pager_address)
     mllp_listener = MllpListener(mllp_address, msg_queue)
     #hl7parser = HL7Parser(msg_queue, parsed_queue)
     data_operator = DataOperator(msg_queue, predict_queue)
     model = Model(predict_queue)
-    pager = Pager(pager_address)
+    #pager = Pager(pager_address)
 
     # ---------------------------------------------------- #
     # Running the system (stage)

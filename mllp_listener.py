@@ -19,6 +19,8 @@ class MllpListener:
         self.msg_queue = msg_queue
         self.client_socket = None
         self.open_connection()
+        self.print_queue = []
+        self.counter=0
     
     def open_connection(self):
         while True:
@@ -44,6 +46,10 @@ class MllpListener:
         for closing the connection
         """
         self.client_socket.close()
+        with open("/var/log/aki-system.log/mllp_listener_output_queue.txt", "w") as file:
+            for item in self.print_queue:
+                #file.write("\n".join(self.print_queue))
+                file.write(f"{item}\n")
         logging.info("[*] Connection closed. Quitting...")
         # i feel like we should exit the system here at this point, see about it later tbh
         exit()
@@ -84,7 +90,11 @@ class MllpListener:
                             break  # Prevents further errors
 
                         # TODO: Write to msg_queue
+                        self.counter+=1
                         self.msg_queue.append(parsed_message)
+                        self.print_queue.append(parsed_message)
+                        if self.counter > 10000:
+                            self.shutdown()
 
 
                         ack_message = self.parser.generate_hl7_ack(hl7_message)
