@@ -7,14 +7,6 @@
 
 <div align="center">
 
-[![pipeline status](https://gitlab.doc.ic.ac.uk/vl724/swemls_europe/badges/main/pipeline.svg)](https://gitlab.doc.ic.ac.uk/vl724/swemls_europe/-/pipelines)
-
-[![GitLab Issues](https://img.shields.io/gitlab/issues/vl724/swemls_europe)](https://gitlab.doc.ic.ac.uk/vl724/swemls_europe/-/issues)
-
-[![GitLab Merge Requests](https://img.shields.io/gitlab/merge-requests/vl724/swemls_europe)](https://gitlab.doc.ic.ac.uk/vl724/swemls_europe/-/merge_requests)
-
-[![GitLab license](https://img.shields.io/gitlab/license/vl724/swemls_europe)](https://gitlab.doc.ic.ac.uk/vl724/swemls_europe/-/blob/main/LICENSE)
-
 </div>
 
 ---
