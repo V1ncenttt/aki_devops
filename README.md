@@ -15,7 +15,7 @@
     <br> 
 </p>
 
-## 📝 Table of Contents
+## Table of Contents
 
 - [About](#about)
 - [Getting Started](#getting_started)
@@ -26,7 +26,7 @@
 - [Authors](#authors)
 - [Acknowledgments](#acknowledgement)
 
-## 🧐 About <a name = "about"></a>
+## About <a name = "about"></a>
 
 This project focuses on deploying an Acute Kidney Injury (AKI) detection system using real-time HL7 messages. The system is designed to run in a single Docker container and operates in a simulated hospital environment before real-world deployment.
 
@@ -61,23 +61,39 @@ Our repository follows a modular structure, ensuring clear separation of core ap
 ```
 
 
-## 🏁 Getting Started <a name = "getting_started"></a>
+## Getting Started <a name = "getting_started"></a>
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See [deployment](#deployment) for notes on how to deploy the project on a live system.
 
 ### Prerequisites
 
-All of the prerequisites are automatically installed so you don't have to think about it.
+All dependencies are automatically installed using the requirements.txt file, so no manual installation is required.
 
 ### Installing
 
-To install, simply clone the repository and use the dockerfile/ compose.
+To set up the system, simply clone the repository:
+```
+git clone <repository-url>
+cd <repository-folder>
 
-## 🔧 Running the tests <a name = "tests"></a>
+```
+
+## Usage <a name="usage"></a>
+
+The system in itself is meant to be used in a docker container, either alone using the dockerfile, or if you want to also use the simulator, you can run:
+
+```shell
+docker-compose up --build
+```
+Which will run both the system and the message simulator, as well as installing all of the dependencies.
+
+
+## Running the tests <a name = "tests"></a>
 
 In order to test  the system, you can simply run:
 
 ```shell
+pip install coverage
 make unittest
 ```
 
@@ -102,25 +118,16 @@ If you want to log the model in mlflow, run:
 make mlflow
 ```
 
-## 🎈 Usage <a name="usage"></a>
-
-The system in itself is meant to be used in a docker container, either alone using the dockerfile, or if you want to also use the simulator, you can run:
-
-```shell
-docker-compose up --build
-```
-Which will run both the system and the message simulator, as well as installing all of the dependencies.
-
-## 🚀 Deployment <a name = "deployment"></a>
+## Deployment <a name = "deployment"></a>
 
 Deployment using kubernetes has not yet been done.
 
-## ⛏️ Built Using <a name = "built_using"></a>
+## Built Using <a name = "built_using"></a>
 
 - [XgBoost](https://xgboost.readthedocs.io/en/stable/) - ML Model
 - [MlFlow](https://mlflow.org/) - Model monitoring
 
-## ✍️ Authors <a name = "authors"></a>
+## Authors <a name = "authors"></a>
 
 - [Kerim Birgi](mailto:kerim.birgi24@imperial.ac.uk) - Group Member
 - [Zala Breznik](mailto:zala.breznik24@imperial.ac.uk) - Group Member
