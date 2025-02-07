@@ -1,6 +1,6 @@
 <p align="center">
   <a href="" rel="noopener">
- <img width=200px height=200px src="https://i.imgur.com/6wj0hh6.jpg" alt="Project logo"></a>
+ <img width=200px height=200px src="img/aki.png" alt="Project logo"></a>
 </p>
 
 <h3 align="center">AKI Alerting System</h3>
@@ -34,7 +34,7 @@
 
 ## 🧐 About <a name = "about"></a>
 
-Write about 1-2 paragraphs describing the purpose of your project.
+The **AKI Alerting System** is designed to monitor patients' creatinine levels in real-time and predict **Acute Kidney Injury (AKI)** using a machine learning model.
 
 ## 🏁 Getting Started <a name = "getting_started"></a>
 
@@ -75,6 +75,13 @@ python3 run_tests.py
 ```
 
 This will trigger all the unit tests.
+If you want to add a coverage report, then run:
+
+```shell
+python3 run_tests.py --coverage
+```
+
+Which will create an HTML coverage report in /coverage_html_report/index.html
 
 ### Break down into end to end tests
 
@@ -109,12 +116,12 @@ Add additional notes about how to deploy this on a live system.
 
 ## ✍️ Authors <a name = "authors"></a>
 
-- [@kylelobo](https://github.com/kylelobo) - Idea & Initial work
+- [Kerim Birgi](kerim.birgi24@imperial.ac.uk) - Group Member
+- [Zala Breznik](zala.breznik24@imperial.ac.uk) - Group Member
+- [Lorenz Heiler](lorenz.heiler24@imperial.ac.uk) - Group Member
+- [Vincent Lefeuve](vincent.lefeuve24@imperial.ac.uk) - Group Member
+- [Alison Lupton](alison.lupton24@imperial.ac.uk) - Group Member
 
-See also the list of [contributors](https://github.com/kylelobo/The-Documentation-Compendium/contributors) who participated in this project.
 
-## 🎉 Acknowledgements <a name = "acknowledgement"></a>
 
-- Hat tip to anyone whose code was used
-- Inspiration
-- References
+
