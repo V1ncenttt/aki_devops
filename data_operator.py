@@ -1,13 +1,13 @@
 
 import logging
-from pandas_database import PandasDatabase
+from database import Database
 import json 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 class DataOperator:
-    def __init__(self, msg_queue, predict_queue):
-        self.database = PandasDatabase('history.csv') #TODO: Change it later to be out of this and set in main
+    def __init__(self, msg_queue, predict_queue, database: Database):
+        self.database = database #TODO: Change it later to be out of this and set in main
         with open('expected_columns.json', 'r') as f: # there should be a better way to do this check i think, maybe not even necessary, see later
             self.expected_columns = json.load(f) # TODO: understand this!
         self.msg_queue = msg_queue

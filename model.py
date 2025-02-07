@@ -111,7 +111,7 @@ class Model:
                 return (mrn, test_time)
             else:
                 return None
-        except Exception as e:
+        except Exception as e: #TODO: Catch the right exception
             print("Error in model.py")
             logging.info(f"Exception: {e}")
             exit()

@@ -2,7 +2,6 @@
 from parser import HL7Parser 
 from model import Model
 from pandas_database import PandasDatabase
-
 from mllp_listener import MllpListener
 from parser import HL7Parser 
 from model import Model
@@ -30,10 +29,10 @@ def main():
     parsed_queue = []#asyncio.Queue()
     predict_queue = []
     patient_data = {}
-
+    database = PandasDatabase('history.csv')
     mllp_listener = MllpListener(mllp_address, msg_queue)
     #hl7parser = HL7Parser(msg_queue, parsed_queue)
-    data_operator = DataOperator(msg_queue, predict_queue)
+    data_operator = DataOperator(msg_queue, predict_queue, database)
     model = Model(predict_queue)
     pager = Pager(pager_address)
 
