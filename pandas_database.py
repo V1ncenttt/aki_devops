@@ -1,82 +1,140 @@
-import pandas as pd
-import logging
+"""
+blablabla
+"""
+import csv
+from collections import defaultdict
 from database import Database
+import pandas as pd
 
 class PandasDatabase(Database):
-    """Manages patient data using a Pandas DataFrame with MRN as the index."""
-
+    """_summary_
+    """
     def __init__(self, filename):
-        """Initialize the database from a CSV file."""
-        self.filename = filename  # Save filename for persistence
+        """_summary_
 
-        # Load CSV
-        try:
-            self.df = pd.read_csv(filename)
-        except FileNotFoundError:
-            logging.warning(f"File {filename} not found, creating a new database.")
-            self.df = pd.DataFrame(columns=["mrn", "age", "sex"])
+        Args:
+            filename (_type_): _description_
+        """
 
-        # Ensure MRN is the index
-        if "mrn" in self.df.columns:
-            self.df.set_index("mrn", inplace=True)
-
-        # Ensure required columns exist
-        self.ensure_columns()
+        self.df = pd.read_csv(filename)
+        self.df.set_index("mrn", inplace=True) # Set MRN as the index 
+        self.history_preprocessing()
         
-        logging.info("Database initialized.")
+        # Add empty 'age' and 'sex' columns
+        self.df.insert(1, "age", None)
+        self.df.insert(2, "sex", None)
 
-    def ensure_columns(self):
-        """Ensure all required columns (age, sex, 43 measurement slots) exist."""
-        required_columns = ["age", "sex"] + [f"creatinine_date_{i}" for i in range(44)] + [f"creatinine_result_{i}" for i in range(44)]
+ 
 
-        for col in required_columns:
-            if col not in self.df.columns:
-                self.df[col] = None  # Initialize missing columns with None
+    def history_preprocessing(self):
+        """
+            Populates our database with the hisotrical values (uses history.csv)
 
-        # Make age then sex the first two columns
-        self.df = self.df[["age", "sex"] + [col for col in self.df.columns if col not in ["age","sex"]]]
+            Arguments:
+                - training_filepath {string} -- csv file path 
+                    
+
+            Returns:
+                - {torch.tensor} -- Preprocessed input array 
+                - {torch.tensor}  -- Preprocessed target array 
+                - {list} -- Expected columns based on the training data
+                
+            """
         
-        self.df.fillna(0, inplace=True)  # Fill NaNs with 0
+        for col in self.df.columns:
+            if 'creatinine_date' in col:
+                self.df[col] = pd.to_datetime(self.df[col],format= '%m/%d/%y %H:%M:%S', errors='coerce')  # Transform strings to datetime
 
+
+        # TODO: should we still do this??
+        # df.fillna(0, inplace=True) # Fill null values with 0 
+
+    
 
     def get_data(self, mrn):
-        """Return the patient row for a given MRN."""
-        if mrn in self.df.index:
-            return self.df.loc[mrn].copy()
-        else:
-            return pd.DataFrame(columns=self.df.columns)  # Return an empty row structure
+        """_summary_
 
+        Args:
+            mrn (int): A patients MRN number  
+
+        Returns:
+            _type_: _description_
+        """
+        
+        # Returns df row 
+        if mrn in self.df.index: # check to see if patient exists
+            patient_data  = self.df.loc[[mrn]].copy()
+            return patient_data
+        else:
+            return pd.DataFrame(columns = self.df.columns) #initialise and return empty dataframe
+        
+
+    
     def add_patient(self, mrn, age=None, sex=None):
-        """Add a new patient or update an existing one."""
+        """_summary_
+
+        Args:
+            mrn (_type_): _description_
+            age (_type_, optional): _description_. Defaults to None.
+        """
+        
+            
+        # Check if patient already is in the system 
         if mrn in self.df.index:
-            # Update existing patient
+
             self.df.at[mrn, "age"] = age
             self.df.at[mrn, "sex"] = sex
         else:
-            # Create new patient row
-            new_row = pd.DataFrame([[age, sex] + [0] * 88], columns=self.df.columns, index=[mrn])
+            # Create new row 
+            new_row = pd.DataFrame([[age, sex]], index=[mrn], columns=["age", "sex"])
             self.df = pd.concat([self.df, new_row])
+            
+                
 
-        #self.save()
 
+        
     def add_measurement(self, mrn, measurement, test_date):
         """Add a new creatinine measurement for a patient."""
+        
+        # Check if the patient row exists, otherwise create it ( we shouldn't have to do this currently)
         if mrn not in self.df.index:
-            # Create a new row if the patient does not exist
-            new_row = pd.DataFrame([[0, 0] + [0] * 86], columns=self.df.columns, index=[mrn])
+            new_row = pd.DataFrame([[None] * len(self.df.columns)], columns=self.df.columns, index=[mrn])
             self.df = pd.concat([self.df, new_row])
 
-        # Get patient row
+        # Get patient data
         patient_data = self.df.loc[mrn]
 
-        # Find the first available empty slot
-        for i in range(44):
-            date_col = f"creatinine_date_{i}"
-            result_col = f"creatinine_result_{i}"
+        # Find the existing "creatinine_date" columns
+        date_cols = sorted([col for col in self.df.columns if "creatinine_date" in col], 
+                        key=lambda x: int(x.split("_")[-1]))  # Sort by index number
 
-            if patient_data[date_col] == 0:  # Empty slot found
-                self.df.at[mrn, date_col] = test_date
-                self.df.at[mrn, result_col] = measurement
-                break
+        last_used_n = -1  # Default if no columns exist
+        empty_col = None  # Store first empty column if available
 
-        #self.save()
+        for col in date_cols:
+            n = int(col.split("_")[-1])  # Extract index number
+
+            if pd.isna(patient_data[col]):  # Check if this column is empty
+                empty_col = n
+                break  # Stop at the first available empty column
+            else:
+                last_used_n = max(last_used_n, n)  # Keep track of the last used index
+        
+        # Decide which column to use
+        if empty_col is not None:
+            next_n = empty_col  # Use first available empty slot
+        else:
+            next_n = last_used_n + 1  # Create a new column if no empty slot found (edits df)
+
+        # Column names for the new test
+        new_date_col = f"creatinine_date_{next_n}"
+        new_result_col = f"creatinine_result_{next_n}"
+
+        # If the columns do not exist, add them dynamically
+        if new_date_col not in self.df.columns:
+            self.df[new_date_col] = None
+            self.df[new_result_col] = None
+
+        # Update the DataFrame with new values
+        self.df.at[mrn, new_date_col] = test_date
+        self.df.at[mrn, new_result_col] = measurement

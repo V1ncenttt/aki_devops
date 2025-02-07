@@ -12,7 +12,7 @@ from pandas_database import PandasDatabase
 import logging
 from database import Database
 
-pd.set_option('future.no_silent_downcasting', True)
+
 ######################################
 
 class SimpleNN(nn.Module):
@@ -45,7 +45,6 @@ class Model:
         self.model = SimpleNN(input_size=self.expected_columns_len, hidden_size=64)  # Match training definition
         self.model.load_state_dict(torch.load('model.pth', weights_only=True))  # Load trained weights
         self.model.eval()
-        self.last_df = None
 
     def add_measurement(self, mrn, measurement, test_date):
         """_summary_
@@ -67,7 +66,7 @@ class Model:
             _type_: _description_
         """
         patient_vector = self.database.get_data(mrn)
-        
+
         if patient_vector is None or patient_vector.empty:
             # print(f"[WARNING] Patient {mrn} not found in database. Creating a new entry.")
             return None  # Handle case where patient does not exist
@@ -76,8 +75,37 @@ class Model:
         # Convert Series to DataFrame if needed
         if isinstance(patient_vector, pd.Series):
             patient_vector = patient_vector.to_frame().T  # Convert to DataFrame
+
+        # print(patient_vector)  # Debugging print to verify it is a DataFrame
+
+        ### FIND LAST INDEX USED
+        # Find the last used creatinine_date column
         
-        logging.info(patient_vector.shape)
+        date_cols = [col for col in patient_vector.columns if isinstance(col, str) and "creatinine_date" in col]
+
+        
+        last_used_n = -1  # Default if no columns exist
+        
+        for col in date_cols:
+            n = int(col.split("_")[-1])  # Extract the number from creatinine_date_n
+            # print(patient_vector[col])
+            if not patient_vector[col].isna().all(): # Check if it has a value
+                last_used_n = max(last_used_n, n)
+                
+        # Next available index
+        next_n = last_used_n + 1
+
+        # Column names for the new test
+        new_date_col = f"creatinine_date_{next_n}"
+        new_result_col = f"creatinine_result_{next_n}"
+
+
+        # Append the new measurement to the patient vector does NOT modify the dataframe
+        patient_vector[new_date_col] = test_time
+        patient_vector[new_result_col] = creatinine_value
+        
+        
+        #Convert to tensor
         return patient_vector
     
     def add_patient(self, mrn, age=None, sex=None):
@@ -109,26 +137,25 @@ class Model:
         # Using measurment row
         df = measurement_row
         
-        #logging.info(f"measurement_row: {df}")
         
         # Make sure that mrn column is either dropped or not inputted! 
         if 'mrn' in df.columns:
             df = df.drop(columns=['mrn'])
         
-        df['sex'] = df['sex'].map({'M': 0, 'F': 1})
-        df['age'] = df['age'] / 100  # Normalize age
-
+        df['sex'] = df['sex'].map({'f': 0, 'm': 1})
         for col in df.columns:
             if 'creatinine_date' in col:
-                df[col] = 0  # Convert to 0 for now
-               
+                df[col] = pd.to_datetime(df[col],format= '%m/%d/%y %H:%M:%S', errors='coerce')  # Convert to datetime
 
-
+        # This is only used when running on personal environment, where test.csv includes ground truth labels.
+        if 'aki' in df.columns:
+            df['aki'] = df['aki'].map({'n': 0, 'y': 1}) # Convert to binary 
+            y = df['aki'].values  # Extract labels
+        else: y = 0
         
-        # Convert to numeric
-        #df = df.apply(pd.to_numeric, errors='coerce')
+        # Fill nan values with 0
+        df = df.apply(pd.to_numeric, errors='coerce')  # Convert all columns to numeric, replacing invalids with NaN
         df.fillna(0, inplace=True)
-        
         
         # 🔹 Extract the same creatinine result columns as training
         creatinine_columns = [col for col in df.columns if 'creatinine_result' in col]
@@ -136,16 +163,31 @@ class Model:
         # 🔹 Add derived features: median & max creatinine values 
         df['creatinine_median'] = df[creatinine_columns].median(axis=1)
         df['creatinine_max'] = df[creatinine_columns].max(axis=1)
-                
-        X = df.iloc[:, ::-1] # Reverse so that most recent test results appear first (match with test processing)
-        #X_tensor = torch.tensor(X, dtype=torch.float32)
-        #Convert all to float
-        X = X.astype(float)
-        X_tensor = torch.tensor(X.to_numpy(), dtype=torch.float32)
         
+        # Match test data size with training data size if it is larger 
+        expected_columns_len = len(expected_columns)
+
+        df_reversed = df.iloc[:, ::-1]  # Reverse column order so that mose recent test dates 
+        
+        df_reversed = df_reversed.iloc[:, :expected_columns_len]  # Keeps only the first `expected_columns_len` columns
+        
+        
+        # Pad if test is smaller than training
+        for col in expected_columns:
+            if col not in df.columns:
+                df[col] = 0  # pad with 0
+        df = df[expected_columns]
+        
+        
+        # Convert to tensors
+        X = df_reversed
+        X = X.to_numpy()  
+        y = np.array(y) 
+        X_tensor = torch.tensor(X, dtype=torch.float32)
+        X_tensor = torch.tensor(df.to_numpy(), dtype=torch.float32)
 
 
-        return X_tensor
+        return X_tensor, y
     
     def predict_aki(self, measurement_vector):
 
@@ -170,7 +212,7 @@ class Model:
               
             """
         # Preprocess then run on trained model 
-        X_test = self.test_preprocessing(measurement_vector, self.expected_columns)
+        X_test, y = self.test_preprocessing(measurement_vector, self.expected_columns)
         
         
         
