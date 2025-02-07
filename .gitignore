@@ -1,6 +1,5 @@
 *.pyc
 settings.json
-data/*
 coverage_html_report/*
 .coverage
 .DS_Store
