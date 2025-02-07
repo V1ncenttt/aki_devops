@@ -59,45 +59,7 @@ Our repository follows a modular structure, ensuring clear separation of core ap
 ├── requirements.txt       # Python dependencies
 ├── run_tests.py           # Test runner for unit tests
 ```
-1. src/ – Core Application
-The main logic of the system is contained within the src/ folder. It includes:
 
-mllp_listener.py → Listens for HL7 messages from the hospital system.
-parser.py → Parses incoming HL7 messages.
-data_operator.py → Handles database updates and data flow.
-database.py / pandas_database.py → Stores and retrieves patient records.
-model.py → Loads the trained AKI detection model and makes predictions.
-pager.py → Sends alerts if an AKI case is detected.
-
-2. model/ – Model Training
-Contains scripts used for training the AKI detection model. The trained model is stored as:
-
-aki_detection.joblib → The saved ML model used for inference.
-
-3. data/ – Training & Historical Data
-This directory contains:
-
-Historical blood test records used to initialize the database.
-
-4. simulation/ – HL7 Simulator
-Contains all simulator-related files, ensuring better separation of concerns:
-
-HL7 message replay system
-MLLP simulator
-Docker Compose setup for multi-container testing
-
-5. test/ – Unit Tests
-Contains unit and integration tests to validate the system:
-
-6. img/ – Documentation Assets
-Contains images and visualizations for README and documentation.
-
-7. Root-Level Files
-main.py → The entry point of the system.
-Dockerfile → Docker configuration for deployment.
-compose.yaml → Defines multi-container setup for the system.
-requirements.txt → List of Python dependencies.
-run_tests.py → Runs all unit tests.
 
 ## 🏁 Getting Started <a name = "getting_started"></a>
 
