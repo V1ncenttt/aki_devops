@@ -41,6 +41,71 @@ This project focuses on deploying an Acute Kidney Injury (AKI) detection system 
 The system processes historical and live blood test data, detects potential AKI cases based on creatinine levels, and triggers pager alerts for medical intervention. It integrates with an HL7 simulator via the MLLP protocol and acknowledges messages to maintain a reliable data stream
 
 ## Repository Structure <a name = "Repository Structure"></a>
+Our repository follows a modular structure, ensuring clear separation of core application logic, model training, testing, and simulation. This improves maintainability, scalability, and deployment efficiency.
+
+├── data/                  # Training data and historical patient records
+├── img/                   # Images and visualizations (e.g., for documentation)
+├── model/                 # Model training scripts and related files
+├── simulation/            # HL7 simulator and related files
+├── src/                   # Core application logic
+│   ├── __init__.py        # Module initialization
+│   ├── data_operator.py   # Manages data processing and database updates
+│   ├── database.py        # Database handling
+│   ├── mllp_listener.py   # Listens for HL7 messages over MLLP
+│   ├── model.py           # Predicts AKI from patient data
+│   ├── pager.py           # Sends alerts if AKI is detected
+│   ├── pandas_database.py # Manages patient data with Pandas
+│   ├── parser.py          # Parses HL7 messages
+├── test/                  # Unit tests for various system components
+├── .gitignore             # Specifies files and folders to be ignored by Git
+├── Dockerfile             # Docker configuration for the main system
+├── README.md              # Project documentation
+├── aki_detection.joblib   # Pretrained AKI detection model
+├── compose.yaml           # Docker Compose configuration
+├── main.py                # Entry point for running the system
+├── makefile               # Makefile for automating tasks
+├── requirements.txt       # Python dependencies
+├── run_tests.py           # Test runner for unit tests
+
+1. src/ – Core Application
+The main logic of the system is contained within the src/ folder. It includes:
+
+mllp_listener.py → Listens for HL7 messages from the hospital system.
+parser.py → Parses incoming HL7 messages.
+data_operator.py → Handles database updates and data flow.
+database.py / pandas_database.py → Stores and retrieves patient records.
+model.py → Loads the trained AKI detection model and makes predictions.
+pager.py → Sends alerts if an AKI case is detected.
+
+2. model/ – Model Training
+Contains scripts used for training the AKI detection model. The trained model is stored as:
+
+aki_detection.joblib → The saved ML model used for inference.
+
+3. data/ – Training & Historical Data
+This directory contains:
+
+Historical blood test records used to initialize the database.
+
+4. simulation/ – HL7 Simulator
+Contains all simulator-related files, ensuring better separation of concerns:
+
+HL7 message replay system
+MLLP simulator
+Docker Compose setup for multi-container testing
+
+5. test/ – Unit Tests
+Contains unit and integration tests to validate the system:
+
+6. img/ – Documentation Assets
+Contains images and visualizations for README and documentation.
+
+7. Root-Level Files
+main.py → The entry point of the system.
+Dockerfile → Docker configuration for deployment.
+compose.yaml → Defines multi-container setup for the system.
+requirements.txt → List of Python dependencies.
+run_tests.py → Runs all unit tests.
 
 ## 🏁 Getting Started <a name = "getting_started"></a>
 
