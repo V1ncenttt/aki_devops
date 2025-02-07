@@ -1,5 +1,25 @@
 """
-blablabla
+Pandas Database Module
+======================
+This module provides the `PandasDatabase` class, which extends the `Database` class to store and process patient 
+data using pandas DataFrames. It supports data retrieval, historical processing, and adding new measurements.
+
+Authors:
+--------
+- Kerim Birgi (kerim.birgi24@imperial.ac.uk)
+- Alsion Lupton (alison.lupton24@imperial.ac.uk)
+
+Classes:
+--------
+- `PandasDatabase`: Handles patient data storage and processing using pandas.
+
+Usage:
+------
+Example:
+    db = PandasDatabase("patients.csv")
+    patient_data = db.get_data(12345)
+    db.add_measurement(12345, 1.2, "2025-02-07 12:30:00")
+
 """
 
 import csv
@@ -9,13 +29,22 @@ import pandas as pd
 
 
 class PandasDatabase(Database):
-    """_summary_"""
+    """
+    Pandas-based Implementation of the Database
+    ============================================
+    Stores patient records, processes historical data, and updates measurements.
+
+    Attributes:
+    -----------
+    - `df (DataFrame)`: Stores patient data with MRN as index.
+    """
 
     def __init__(self, filename):
-        """_summary_
-
+        """
+        Initializes the PandasDatabase with a patient dataset.
+        
         Args:
-            filename (_type_): _description_
+            filename (str): Path to the CSV file containing patient data.
         """
 
         self.df = pd.read_csv(filename, date_format="%m/%d/%y %H:%M:%S")
@@ -28,17 +57,7 @@ class PandasDatabase(Database):
 
     def history_preprocessing(self):  # TODO: Delete the function
         """
-        Populates our database with the hisotrical values (uses history.csv)
-
-        Arguments:
-            - training_filepath {string} -- csv file path
-
-
-        Returns:
-            - {torch.tensor} -- Preprocessed input array
-            - {torch.tensor}  -- Preprocessed target array
-            - {list} -- Expected columns based on the training data
-
+        Converts date columns to datetime format for easier processing.
         """
 
         for col in self.df.columns:
@@ -47,29 +66,28 @@ class PandasDatabase(Database):
                     self.df[col], format="%m/%d/%y %H:%M:%S", errors="coerce"
                 )  # Transform strings to datetime
 
-        # TODO: should we still do this??
-        # df.fillna(0, inplace=True) # Fill null values with 0
 
     def get_past_measurements(self, mrn, creatinine_value, test_time):
-        """_summary_
-
+        """
+        Retrieves historical creatinine measurements for a given patient and appends the new test.
+        
         Args:
-            mrn (_type_): _description_
-
+            mrn (int): Patient's medical record number.
+            creatinine_value (float): New creatinine measurement.
+            test_time (str): Timestamp of the new measurement.
+        
         Returns:
-            _type_: _description_
+            DataFrame: Updated patient data with the new measurement.
         """
         patient_vector = self.get_data(mrn)
 
         if patient_vector is None or patient_vector.empty:
-            # print(f"[WARNING] Patient {mrn} not found in database. Creating a new entry.")
             return None  # Handle case where patient does not exist
 
-        # Convert Series to DataFrame if needed
+        # Convert Series to DataFrame
         if isinstance(patient_vector, pd.Series):
             patient_vector = patient_vector.to_frame().T  # Convert to DataFrame
 
-        # print(patient_vector)  # Debugging print to verify it is a DataFrame
 
         ### FIND LAST INDEX USED
         # Find the last used creatinine_date column
@@ -103,13 +121,14 @@ class PandasDatabase(Database):
         return patient_vector
 
     def get_data(self, mrn):
-        """_summary_
-
+        """
+        Retrieves a patient's data by MRN.
+        
         Args:
-            mrn (int): A patients MRN number
-
+            mrn (int): Patient's medical record number.
+        
         Returns:
-            _type_: _description_
+            DataFrame: Patient's data if found, else an empty DataFrame.
         """
 
         # Returns df row
@@ -122,11 +141,13 @@ class PandasDatabase(Database):
             )  # initialise and return empty dataframe
 
     def add_patient(self, mrn, age=None, sex=None):
-        """_summary_
-
+        """
+        Adds a new patient entry or updates an existing one.
+        
         Args:
-            mrn (_type_): _description_
-            age (_type_, optional): _description_. Defaults to None.
+            mrn (int): Patient's medical record number.
+            age (int, optional): Patient's age.
+            sex (str, optional): Patient's sex.
         """
 
         # Check if patient already is in the system
@@ -140,7 +161,14 @@ class PandasDatabase(Database):
             self.df = pd.concat([self.df, new_row])
 
     def add_measurement(self, mrn, measurement, test_date):
-        """Add a new creatinine measurement for a patient."""
+        """
+        Adds a new creatinine measurement for a patient.
+        
+        Args:
+            mrn (int): Patient's medical record number.
+            measurement (float): New creatinine measurement.
+            test_date (str): Timestamp of the measurement.
+        """
 
         # Check if the patient row exists, otherwise create it ( we shouldn't have to do this currently)
         if mrn not in self.df.index:
