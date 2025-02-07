@@ -1,4 +1,28 @@
-"""_summary_
+"""
+AKI Detection Module
+=====================
+This module provides the `Model` class, which is responsible for detecting acute kidney injury (AKI) 
+based on creatinine measurements over time. It preprocesses input patient data, extracts relevant features, 
+and applies a trained machine learning model to predict AKI occurrence.
+
+Authors:
+--------
+- Kerim Birgi (kerim.birgi24@imperial.ac.uk)
+- Alsion Lupton (alison.lupton24@imperial.ac.uk)
+
+Classes:
+--------
+- `Model`: Loads a trained model and predicts AKI based on processed patient data.
+
+Usage:
+------
+Example:
+    model = Model(predict_queue)
+    df = pd.read_csv("test.csv")
+    processed_df = model.preprocess(df)
+    prediction = model.predict_aki(processed_df)
+    print("AKI Prediction:", prediction)
+
 """
 
 # Imports
@@ -7,7 +31,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from joblib import dump, load
-#from xgboost import XGBClassifier
 import numpy as np
 import json 
 from pandas_database import PandasDatabase
@@ -18,9 +41,26 @@ from sklearn.preprocessing import LabelEncoder
 
 
 class Model:
-    """_summary_"""
+    """
+    Model for Acute Kidney Injury (AKI) Detection
+    =============================================
+    This class processes patient data, extracts features, and applies a trained 
+    machine learning model to predict the likelihood of AKI.
+
+    Attributes:
+    -----------
+    - `predict_queue (list)`: Queue containing patient data for prediction.
+    - `aki_model (object)`: Preloaded machine learning model for AKI detection.
+    - `le (LabelEncoder)`: Label encoder for categorical features.
+    """
 
     def __init__(self, predict_queue):
+        """
+        Initializes the Model class with a queue and loads the pretrained AKI detection model.
+        
+        Args:
+            predict_queue (list): List containing patient records for AKI prediction.
+        """
         self.predict_queue = predict_queue
         self.aki_model = load('aki_detection.joblib')
         self.le = LabelEncoder()
@@ -28,13 +68,13 @@ class Model:
 
     def add_padding(self, df):
         """
-        Add padding to dataframe to ensure constant length
+        Ensures each patient's data has a constant length of 50 measurements by adding padding.
         
         Args:
-            df (Dataframe): Dataframe to be formatted
+            df (DataFrame): Patient measurement data.
 
         Returns:
-            Dataframe : Dataframe with constant measurement length of 50
+            DataFrame: Padded DataFrame with consistent feature length.
         """
         for i in range(((len(df.columns)-2)//2), 50):
             df[f'creatinine_date_{i}'] = 0
@@ -76,9 +116,6 @@ class Model:
         results_cols = [col for col in df.columns if "creatinine_result" in col]
         date_cols = [col for col in df.columns if "creatinine_date" in col]
 
-        #df = self.process_dates(df)
-        #df = self.add_padding(df)
-
         df['creatinine_mean'] = df[results_cols].mean(axis=1)
         df['creatinine_median'] = df[results_cols].median(axis=1, skipna=True)
         df['creatinine_max'] = df[results_cols].max(axis=1)
@@ -94,18 +131,42 @@ class Model:
         return df
 
     def preprocess(self, df):
+        """
+        Prepares input data by encoding categorical variables and extracting features.
+        
+        Args:
+            df (DataFrame): Raw patient data.
+        
+        Returns:
+            DataFrame: Processed DataFrame ready for prediction.
+        """
         df['sex'] = self.le.fit_transform(df['sex'])
         x = self.process_features(df)
         return x
     
     def predict_aki(self, measurement_vector):
+        """
+        Predicts AKI using the preloaded model.
+        
+        Args:
+            measurement_vector (DataFrame): Processed patient data.
+        
+        Returns:
+            int: 1 if AKI is detected, 0 otherwise.
+        """
         x = self.preprocess(measurement_vector)
         y = self.aki_model.predict(x)
         logging.info(f"Prediction: {y}")
         return y
         
     def run(self):
-        (mrn, test_time, patient_vector) = self.predict_queue.pop(0) # THIS IS SUPER INEFFICIENT LATER CHANGE USEAGE OF TYPE OF QUEUE FOR SPEED
+        """
+        Executes the prediction process on the next patient in the queue.
+        
+        Returns:
+            tuple: (MRN, test_time) if AKI is detected, otherwise None.
+        """
+        (mrn, test_time, patient_vector) = self.predict_queue.pop(0) 
         try:
             if self.predict_aki(patient_vector):
                 return (mrn, test_time)
@@ -128,8 +189,6 @@ if __name__=="__main__":
     aki_data = np.where(df['aki'] == 'y', 1, 0).astype(int)
     df = df.drop(columns="aki")
 
-    # Save as CSV without column name
-    #np.savetxt("aki_labels.csv", aki_data, fmt='%d', delimiter=',')
 
     # Run model prediction on the test dataset
     predictions = []
