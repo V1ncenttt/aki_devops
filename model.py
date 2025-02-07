@@ -99,7 +99,8 @@ class Model:
         for col in date_cols:
             df[col] = (df[col] - df['ref_date']).dt.total_seconds()
         df = df.drop(columns=['ref_date'])
-        df = df.fillna(0)
+        with pd.option_context("future.no_silent_downcasting", True):
+            df = df.fillna(0).infer_objects(copy=False)
         return df
 
     def process_features(self, df):
@@ -120,14 +121,17 @@ class Model:
         df['creatinine_median'] = df[results_cols].median(axis=1, skipna=True)
         df['creatinine_max'] = df[results_cols].max(axis=1)
         df['creatinine_min'] = df[results_cols].min(axis=1)
-        df["creatinine_max_delta"] = df[results_cols].diff(axis=1).max(axis=1).fillna(0) # note: this is better than df['creatinine_max'] - df['creatinine_min']
+        with pd.option_context("future.no_silent_downcasting", True):
+            df["creatinine_max_delta"] = df[results_cols].diff(axis=1).max(axis=1).fillna(0).infer_objects(copy=False) # note: this is better than df['creatinine_max'] - df['creatinine_min']
         df['creatinine_std'] = df[results_cols].std(axis=1)
         df['most_recent'] = df[results_cols].apply(lambda row: row.dropna().iloc[-1] if not row.dropna().empty else None, axis=1)
         df['rv1_ratio'] = df['most_recent'] / df['creatinine_min']
         df['rv2_ratio'] = df['most_recent'] / df['creatinine_median']
         df = df.drop(columns=results_cols)
         df = df.drop(columns=date_cols)
-        df = df.fillna(0)
+
+        with pd.option_context("future.no_silent_downcasting", True):
+            df = df.fillna(0).infer_objects(copy=False) # Prevents FutureWarning
         return df
 
     def preprocess(self, df):
