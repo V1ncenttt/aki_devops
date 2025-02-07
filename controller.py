@@ -32,8 +32,10 @@ class Controller:
         # logging.info(f"[WORKER] Processing Patient {mrn} at {test_time}...")
 
         patient_vector = self.model.get_past_measurements(mrn, creatinine_value, test_time)
+        self.model.add_measurement(mrn, creatinine_value, test_time)
 
         alert_needed = self.model.predict_aki(patient_vector)
+        
         logging.info(f"prediction_made:{alert_needed}")
         self.counter += 1
         logging.info(f"\033[1;32m>>> HELLO!!!!!! Processing Patient {self.counter} <<<\033[0m")
@@ -42,7 +44,7 @@ class Controller:
         if alert_needed:
             self.send_pager_alert(mrn, test_time)
 
-        self.model.add_measurement(mrn, creatinine_value, test_time)
+        
 
 
     def process_adt_message(self, message):  
