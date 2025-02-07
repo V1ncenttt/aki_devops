@@ -23,7 +23,7 @@ Example:
 """
 
 from collections import defaultdict
-from database import Database
+from src.database import Database
 import pandas as pd
 
 

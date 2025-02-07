@@ -23,7 +23,7 @@ Example:
 """
 
 import logging
-from database import Database
+from src.database import Database
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
