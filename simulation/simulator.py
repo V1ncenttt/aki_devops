@@ -7,6 +7,7 @@ import signal
 import socket
 import threading
 import time
+import csv # for the writing of simulation results
 
 VERSION = "0.0.6"
 MLLP_BUFFER_SIZE = 1024
@@ -126,6 +127,8 @@ class PagerRequestHandler(http.server.BaseHTTPRequestHandler):
 
     def __init__(self, shutdown, *args, **kwargs):
         self.shutdown = shutdown
+        self.results_file =  "aki_predictions.csv"
+        self.results = []
         super().__init__(*args, **kwargs)
 
     def do_POST(self):
@@ -177,8 +180,11 @@ class PagerRequestHandler(http.server.BaseHTTPRequestHandler):
                 return
         if timestamp:
             print(f"pager: paging for MRN {mrn} at {timestamp}")
+            self.results.append((mrn, timestamp))
+            #print("saved result")
         else:
             print(f"pager: paging for MRN {mrn}")
+            self.results.append((mrn, ""))
         self.send_response(http.HTTPStatus.OK)
         self.send_header("Content-Type", "text/plain")
         self.end_headers()
@@ -195,6 +201,13 @@ class PagerRequestHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Type", "text/plain")
         self.end_headers()
         self.wfile.write(b"ok\n")
+
+        #write results of test
+        file_path = "/var/log/simulation.log/aki_predictions.csv"
+        with open(file_path, "w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(["mrn", "timestamp"])
+            writer.writerows(self.results)
         self.shutdown()
 
     def log_message(*args):
