@@ -13,12 +13,11 @@ Run this script to start the system:
 
 # file/class imports
 
-from model import Model
-from pandas_database import PandasDatabase
-from mllp_listener import MllpListener
-from model import Model
-from data_operator import DataOperator
-from pager import Pager
+from src.pandas_database import PandasDatabase
+from src.mllp_listener import MllpListener
+from src.model import Model
+from src.data_operator import DataOperator
+from src.pager import Pager
 import os
 
 def main():
@@ -36,7 +35,7 @@ def main():
     parsed_queue = []#asyncio.Queue()
     predict_queue = []
     patient_data = {}
-    database = PandasDatabase('history.csv')
+    database = PandasDatabase('data/history.csv')
     mllp_listener = MllpListener(mllp_address, msg_queue)
     data_operator = DataOperator(msg_queue, predict_queue, database)
     model = Model(predict_queue)

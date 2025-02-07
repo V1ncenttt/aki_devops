@@ -24,8 +24,7 @@ import os
 import logging
 import socket
 import time
-from model import Model
-from parser import HL7Parser, START_BLOCK, END_BLOCK
+from src.parser import HL7Parser, START_BLOCK, END_BLOCK
 
 import os
 
