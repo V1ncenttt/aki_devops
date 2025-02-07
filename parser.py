@@ -40,16 +40,20 @@ from datetime import datetime
 START_BLOCK = b"\x0b"
 END_BLOCK = b"\x1c\r"
 
+
 def singleton(class_):
     """
     Defines singletons as a decorator.
     """
     instances = {}
+
     def getinstance(*args, **kwargs):
         if class_ not in instances:
             instances[class_] = class_(*args, **kwargs)
         return instances[class_]
+
     return getinstance
+
 
 @singleton
 class HL7Parser:
@@ -118,7 +122,7 @@ class HL7Parser:
                 - birth_date.year
                 - ((today.month, today.day) < (birth_date.month, birth_date.day))
             )
-        except ValueError:  
+        except ValueError:
             return None
 
     def parse(self, message: str) -> tuple[str, dict, list]:
@@ -261,5 +265,3 @@ class HL7Parser:
         )
 
         return None, None, None
-
-

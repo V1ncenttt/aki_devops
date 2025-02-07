@@ -2,6 +2,7 @@ import unittest
 from datetime import datetime
 from parser import HL7Parser
 
+
 class TestHL7Parser(unittest.TestCase):
 
     def setUp(self):
@@ -30,7 +31,9 @@ class TestHL7Parser(unittest.TestCase):
 
     def test_calculate_age_valid(self):
         """Test age calculation from a valid date of birth."""
-        self.assertEqual(self.parser.calculate_age("20000101"), datetime.today().year - 2000)
+        self.assertEqual(
+            self.parser.calculate_age("20000101"), datetime.today().year - 2000
+        )
 
     def test_calculate_age_invalid(self):
         """Test age calculation with an invalid date format."""
@@ -63,7 +66,6 @@ class TestHL7Parser(unittest.TestCase):
             "OBR|1||||||20250209133600\r"
             "OBX|1|SN|CREATININE||165.6468632163597"
         )
-
 
         msg_type, _, blood_tests = self.parser.parse(message)
         self.assertEqual(msg_type, "ORU^R01")
@@ -129,5 +131,6 @@ class TestHL7Parser(unittest.TestCase):
         parser = HL7Parser()
         self.assertIs(self.parser, parser)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

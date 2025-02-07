@@ -1,4 +1,3 @@
-
 """
 Database Module
 ===============
@@ -33,12 +32,14 @@ class SQLDatabase(Database):
         pass
         
 """
+
 from abc import ABC, abstractmethod
+
 
 class Database(ABC):
     def __init__(self) -> None:
         pass
-    
+
     @abstractmethod
     def get_data(self, mrn):
         """_summary_
@@ -51,9 +52,9 @@ class Database(ABC):
             NotImplementedError: This is an abstract method,
             and should be implemented by a subclass
         """
-        
+
         raise NotImplementedError
-    
+
     @abstractmethod
     def add_measurement(self, mrn, measurement, test_date) -> None:
         """Adds a creatinine measurement for a patient to the database.
@@ -68,11 +69,11 @@ class Database(ABC):
             and should be implemented by a subclass
         """
         raise NotImplementedError
-    
+
     @abstractmethod
     def add_patient(self, mrn, age=None, sex=None) -> None:
         """Adds a new patient to the database.
-        
+
         Args:
             mrn (): A patients MRN number
             age (): The age of the patient
@@ -83,4 +84,3 @@ class Database(ABC):
             and should be implemented by a subclass
         """
         raise NotImplementedError
-    
