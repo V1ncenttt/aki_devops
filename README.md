@@ -34,7 +34,9 @@
 
 ## 🧐 About <a name = "about"></a>
 
-The **AKI Alerting System** is designed to monitor patients' creatinine levels in real-time and predict **Acute Kidney Injury (AKI)** using a machine learning model.
+This project focuses on deploying an Acute Kidney Injury (AKI) detection system using real-time HL7 messages. The system is designed to run in a single Docker container and operates in a simulated hospital environment before real-world deployment.
+
+The system processes historical and live blood test data, detects potential AKI cases based on creatinine levels, and triggers pager alerts for medical intervention. It integrates with an HL7 simulator via the MLLP protocol and acknowledges messages to maintain a reliable data stream
 
 ## 🏁 Getting Started <a name = "getting_started"></a>
 
