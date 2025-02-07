@@ -31,99 +31,28 @@ class SimpleNN(nn.Module):
 class Model:
     """_summary_"""
 
-    def __init__(self, database: Database):
+    def __init__(self, predict_queue):
         """_summary_
 
         Args:
-            database (_type_): _description_
+            
         """
-        self.database = PandasDatabase('history.csv') #TODO: Change it later to be out of this and set in main
+        self.predict_queue = predict_queue
         with open('expected_columns.json', 'r') as f:
             self.expected_columns = json.load(f)
-        
         self.expected_columns_len = len(self.expected_columns)  # Ensure we get the correct number of features
         self.model = SimpleNN(input_size=self.expected_columns_len, hidden_size=64)  # Match training definition
         self.model.load_state_dict(torch.load('model.pth', weights_only=True))  # Load trained weights
         self.model.eval()
 
-    def add_measurement(self, mrn, measurement, test_date):
-        """_summary_
 
-        Args:
-            mrn (_type_): _description_
-            measurement (_type_): _description_
-            test_date (_type_): _description_
-        """
-        return self.database.add_measurement(mrn, measurement, test_date)
-    
-    def get_past_measurements(self, mrn, creatinine_value, test_time):
-        """_summary_
-
-        Args:
-            mrn (_type_): _description_
-
-        Returns:
-            _type_: _description_
-        """
-        patient_vector = self.database.get_data(mrn)
-
-        if patient_vector is None or patient_vector.empty:
-            # print(f"[WARNING] Patient {mrn} not found in database. Creating a new entry.")
-            return None  # Handle case where patient does not exist
-        
-        
-        # Convert Series to DataFrame if needed
-        if isinstance(patient_vector, pd.Series):
-            patient_vector = patient_vector.to_frame().T  # Convert to DataFrame
-
-        # print(patient_vector)  # Debugging print to verify it is a DataFrame
-
-        ### FIND LAST INDEX USED
-        # Find the last used creatinine_date column
-        
-        date_cols = [col for col in patient_vector.columns if isinstance(col, str) and "creatinine_date" in col]
-
-        
-        last_used_n = -1  # Default if no columns exist
-        
-        for col in date_cols:
-            n = int(col.split("_")[-1])  # Extract the number from creatinine_date_n
-            # print(patient_vector[col])
-            if not patient_vector[col].isna().all(): # Check if it has a value
-                last_used_n = max(last_used_n, n)
-                
-        # Next available index
-        next_n = last_used_n + 1
-
-        # Column names for the new test
-        new_date_col = f"creatinine_date_{next_n}"
-        new_result_col = f"creatinine_result_{next_n}"
-
-
-        # Append the new measurement to the patient vector does NOT modify the dataframe
-        patient_vector[new_date_col] = test_time
-        patient_vector[new_result_col] = creatinine_value
-        
-        
-        #Convert to tensor
-        return patient_vector
-    
-    def add_patient(self, mrn, age=None, sex=None):
-        """_summary_
-
-        Args:
-            mrn (_type_): _description_
-            age (_type_, optional): _description_. Defaults to None.
-        """
-        return self.database.add_patient(mrn, age,sex)
-        
         
     def test_preprocessing(self, measurement_row, expected_columns):
         """
             Preprocess input of the network. Runs on training data with AKI column.
 
             Arguments:
-                - training_filepath {string} -- csv file path
+                - training_filepath {string} -- csv file path # TODO: CHANGE THIS DESCRIPTION
                 - expected_columns {list} -- Expected columns based on the training data
                     
 
@@ -224,9 +153,42 @@ class Model:
         logging.info(f"prediction: {predictions}")
         
         # Convert to binary
-        return (predictions > 0.3).astype(int) # Lower than usual because we care more about F3 
+        return int((predictions.item()) > 0.3) # Lower than usual because we care more about F3 
         
-        
-        
-  
+    def run(self):
+        (mrn, test_time, patient_vector) = self.predict_queue.pop(0) # THIS IS SUPER INEFFICIENT LATER CHANGE USEAGE OF TYPE OF QUEUE FOR SPEED
+        if self.predict_aki(patient_vector):
+            return (mrn, test_time)
+        else:
+            return None
 
+
+if __name__=="__main__":
+    from sklearn.metrics import fbeta_score
+    dummy_queue = []
+    model = Model(dummy_queue)
+     
+    # EXTRACT GROUND TRUTH VALUES FROM TEST.CSV!!!!
+    # Load test dataset
+    df = pd.read_csv("test.csv")
+    # Extract true AKI labels and convert 'y' to 1, 'n' to 0
+    aki_data = np.where(df['aki'] == 'y', 1, 0).astype(int)
+
+    # Save as CSV without column name
+    #np.savetxt("aki_labels.csv", aki_data, fmt='%d', delimiter=',')
+
+    # Run model prediction on the test dataset
+    predictions = []
+    for i in range(len(df)):
+        print(f"Progress: {i+1:03d}/{len(df)}")
+        row = df.iloc[[i]].copy()
+        prediction = model.predict_aki(row)
+        predictions.append(prediction)
+
+    # Load saved labels without headers
+    #data = np.loadtxt('aki_labels.csv', delimiter=',', dtype=int)
+
+    # Compute F3 Score
+    f3_score_test = fbeta_score(aki_data, predictions, beta=3, zero_division=1)
+
+    print('Final F3 score:', f3_score_test)
