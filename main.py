@@ -12,11 +12,10 @@ Run this script to start the system:
 """
 
 # file/class imports
-from parser import HL7Parser 
+
 from model import Model
 from pandas_database import PandasDatabase
 from mllp_listener import MllpListener
-from parser import HL7Parser 
 from model import Model
 from data_operator import DataOperator
 from pager import Pager

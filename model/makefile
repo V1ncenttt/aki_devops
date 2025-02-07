@@ -17,3 +17,6 @@ eval:
 
 train:
 	$(PYTHON) $(MODEL_SCRIPT)
+
+mlflow:
+	$(PYTHON) $(MODEL_TRAINING_SCRIPT) --input $(TEST_DATA) --eval $(EVAL_DATA) --no-infer --mlflow

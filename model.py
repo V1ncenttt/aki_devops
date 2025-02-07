@@ -27,15 +27,9 @@ Example:
 
 # Imports
 import pandas as pd
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from joblib import dump, load
+from joblib import load
 import numpy as np
-import json 
-from pandas_database import PandasDatabase
 import logging
-from database import Database
 from sklearn.preprocessing import LabelEncoder
 
 
