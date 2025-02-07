@@ -20,9 +20,11 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 class Controller:
     """HL7 Listener & Worker Controller"""
 
-    def __init__(self, model):
+    def __init__(self, model, pager_address):
         self.model = model
-        self.pager_url = f"http://{os.getenv('PAGER_HOST', 'message-simulator')}:8441/page"        
+        pager_host = pager_address.split(":")[0]
+        pager_port = pager_address.split(":")[1]
+        self.pager_url = f"http://{pager_host}:{pager_port}/page"        
         self.parser = HL7Parser()
         self.counter = 0
        
