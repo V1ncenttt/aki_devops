@@ -16,9 +16,9 @@ class PandasDatabase(Database):
             filename (_type_): _description_
         """
 
-        self.df = pd.read_csv(filename)
+        self.df = pd.read_csv(filename, date_format='%m/%d/%y %H:%M:%S')
         self.df.set_index("mrn", inplace=True) # Set MRN as the index 
-        self.history_preprocessing()
+        #self.history_preprocessing()
         
         # Add empty 'age' and 'sex' columns
         self.df.insert(1, "age", None)
@@ -43,7 +43,7 @@ class PandasDatabase(Database):
         
         for col in self.df.columns:
             if 'creatinine_date' in col:
-                self.df[col] = pd.to_datetime(self.df[col],format= '%m/%d/%y %H:%M:%S', errors='coerce')  # Transform strings to datetime
+                self.df[col] = pd.to_datetime(self.df[col], format='%m/%d/%y %H:%M:%S', errors='coerce')  # Transform strings to datetime
 
 
         # TODO: should we still do this??
