@@ -79,7 +79,7 @@ class Model:
         #df = self.process_dates(df)
         #df = self.add_padding(df)
 
-
+        df = df.fillna(0)
         df['creatinine_mean'] = df[results_cols].mean(axis=1)
         df['creatinine_median'] = df[results_cols].median(axis=1, skipna=True)
         df['creatinine_max'] = df[results_cols].max(axis=1)
@@ -101,15 +101,20 @@ class Model:
     def predict_aki(self, measurement_vector):
         x = self.preprocess(measurement_vector)
         y = self.aki_model.predict(x)
+        logging.info(f"Prediction: {y}")
         return y
         
     def run(self):
         (mrn, test_time, patient_vector) = self.predict_queue.pop(0) # THIS IS SUPER INEFFICIENT LATER CHANGE USEAGE OF TYPE OF QUEUE FOR SPEED
-        if self.predict_aki(patient_vector):
-            return (mrn, test_time)
-        else:
-            return None
-
+        try:
+            if self.predict_aki(patient_vector):
+                return (mrn, test_time)
+            else:
+                return None
+        except Exception as e:
+            print("Error in model.py")
+            logging.info(f"Exception: {e}")
+            exit()
 
 if __name__=="__main__":
     from sklearn.metrics import fbeta_score
