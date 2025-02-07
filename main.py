@@ -1,3 +1,16 @@
+"""
+Main System Module
+==================
+This module initializes and runs the HL7 message processing system, handling message reception, parsing,
+prediction, and alerting mechanisms.
+
+Usage:
+------
+Run this script to start the system:
+    python main.py
+
+"""
+
 # file/class imports
 from parser import HL7Parser 
 from model import Model
@@ -16,11 +29,12 @@ import asyncio
 import logging
 
 def main():
+    """
+    Main function that initializes and runs the HL7 message processing system.
+    """
     # read the environment variables for the mllp and pager ports
     mllp_address = os.getenv("MLLP_ADDRESS", "message-simulator:8440")
     pager_address = os.getenv("PAGER_ADDRESS", "message-simulator:8441")
-
-    # TODO: use async for better pipeline workload balancing
 
     # ---------------------------------------------------- #
     # initialization stage
@@ -31,7 +45,6 @@ def main():
     patient_data = {}
     database = PandasDatabase('history.csv')
     mllp_listener = MllpListener(mllp_address, msg_queue)
-    #hl7parser = HL7Parser(msg_queue, parsed_queue)
     data_operator = DataOperator(msg_queue, predict_queue, database)
     model = Model(predict_queue)
     pager = Pager(pager_address)
@@ -64,8 +77,9 @@ def main():
 
 
 if __name__ == "__main__":
-    # run system
+    """
+    Entry point for running the system.
+    """
     main()
    
-    # TODO: In future add preventative measures for system crashes, not relevant for this week however.
 
