@@ -7,10 +7,13 @@
 
 <div align="center">
 
-[![Status](https://img.shields.io/badge/status-active-success.svg)]()
-[![GitHub Issues](https://img.shields.io/github/issues/kylelobo/The-Documentation-Compendium.svg)](https://github.com/kylelobo/The-Documentation-Compendium/issues)
-[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/kylelobo/The-Documentation-Compendium.svg)](https://github.com/kylelobo/The-Documentation-Compendium/pulls)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENSE)
+[![pipeline status](https://gitlab.doc.ic.ac.uk/vl724/swemls_europe/badges/main/pipeline.svg)](https://gitlab.doc.ic.ac.uk/vl724/swemls_europe/-/pipelines)
+
+[![GitLab Issues](https://img.shields.io/gitlab/issues/vl724/swemls_europe)](https://gitlab.doc.ic.ac.uk/vl724/swemls_europe/-/issues)
+
+[![GitLab Merge Requests](https://img.shields.io/gitlab/merge-requests/vl724/swemls_europe)](https://gitlab.doc.ic.ac.uk/vl724/swemls_europe/-/merge_requests)
+
+[![GitLab license](https://img.shields.io/gitlab/license/vl724/swemls_europe)](https://gitlab.doc.ic.ac.uk/vl724/swemls_europe/-/blob/main/LICENSE)
 
 </div>
 
@@ -45,71 +48,58 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 
-What things you need to install the software and how to install them.
-
-```
-Give examples
-```
+All of the prerequisites are automatically installed so you don't have to think about it.
 
 ### Installing
 
-A step by step series of examples that tell you how to get a development env running.
-
-Say what the step will be
-
-```
-Give the example
-```
-
-And repeat
-
-```
-until finished
-```
-
-End with an example of getting some data out of the system or using it for a little demo.
+To install, simply clone the repository and use the dockerfile/ compose.
 
 ## 🔧 Running the tests <a name = "tests"></a>
 
 In order to test  the system, you can simply run:
 
 ```shell
-python3 run_tests.py
+make unittest
 ```
 
 This will trigger all the unit tests.
 If you want to add a coverage report, then run:
 
 ```shell
-python3 run_tests.py --coverage
+make unittest_coverage
 ```
 
-Which will create an HTML coverage report in /coverage_html_report/index.html
+## ⛏️ Model Training <a name = "model_training"></a>
 
-### Break down into end to end tests
+If you want to train and evaluate the model, run:
 
-Explain what these tests test and why
-
-```
-Give an example
+```shell
+make eval
 ```
 
-### And coding style tests
+If you want to log the model in mlflow, run:
 
-Explain what these tests test and why
-
-```
-Give an example
+```shell
+make mlflow
 ```
 
 ## 🎈 Usage <a name="usage"></a>
 
-Add notes about how to use the system.
+The system in itself is meant to be used in a docker container, either alone using the dockerfile, or if you want to also use the simulator, you can run:
+
+```shell
+docker-compose up --build
+```
+Which will run both the system and the message simulator, as well as installing all of the dependencies.
 
 ## 🚀 Deployment <a name = "deployment"></a>
 
-Add additional notes about how to deploy this on a live system.
+Deployment using kubernetes has not yet been done.
 
+## ⛏️ Built Using <a name = "built_using"></a>
+
+- [XgBoost](https://xgboost.readthedocs.io/en/stable/) - ML Model
+- [MlFlow](https://mlflow.org/) - Model monitoring
 
 ## ✍️ Authors <a name = "authors"></a>
 
