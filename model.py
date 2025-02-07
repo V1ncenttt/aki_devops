@@ -74,6 +74,7 @@ class Model:
             Dataframe : Dataframe with processed features
         """
         results_cols = [col for col in df.columns if "creatinine_result" in col]
+        date_cols = [col for col in df.columns if "creatinine_date" in col]
 
         #df = self.process_dates(df)
         #df = self.add_padding(df)
@@ -88,7 +89,8 @@ class Model:
         df['most_recent'] = df[results_cols].apply(lambda row: row.dropna().iloc[-1] if not row.dropna().empty else None, axis=1)
         df['rv1_ratio'] = df['most_recent'] / df['creatinine_min']
         df['rv2_ratio'] = df['most_recent'] / df['creatinine_median']
-        df.drop(columns="")
+        df = df.drop(columns=results_cols)
+        df = df.drop(columns=date_cols)
         return df
 
     def preprocess(self, df):
