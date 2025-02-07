@@ -79,7 +79,6 @@ class Model:
         #df = self.process_dates(df)
         #df = self.add_padding(df)
 
-        df = df.fillna(0)
         df['creatinine_mean'] = df[results_cols].mean(axis=1)
         df['creatinine_median'] = df[results_cols].median(axis=1, skipna=True)
         df['creatinine_max'] = df[results_cols].max(axis=1)
@@ -91,6 +90,7 @@ class Model:
         df['rv2_ratio'] = df['most_recent'] / df['creatinine_median']
         df = df.drop(columns=results_cols)
         df = df.drop(columns=date_cols)
+        df = df.fillna(0)
         return df
 
     def preprocess(self, df):
