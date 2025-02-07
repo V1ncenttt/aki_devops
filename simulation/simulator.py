@@ -244,9 +244,7 @@ def main():
                 writer = csv.writer(file)
                 writer.writerow(["mrn", "date"])
                 writer.writerows(RESULTS_QUEUE)
-    
-    if flags.evaluate:
-        return
+
 
 if __name__ == "__main__":
     main()
