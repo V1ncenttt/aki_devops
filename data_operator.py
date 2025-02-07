@@ -51,8 +51,6 @@ class DataOperator:
             database (Database): Database instance for patient record management.
         """
         self.database = database 
-        with open('expected_columns.json', 'r') as f: 
-            self.expected_columns = json.load(f) 
         self.msg_queue = msg_queue
         self.predict_queue = predict_queue
 

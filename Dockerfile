@@ -14,8 +14,6 @@ COPY database.py /aki-system/
 COPY parser.py /aki-system/
 COPY requirements.txt /aki-system/
 COPY history.csv /aki-system/
-COPY train_model_script.py /aki-system/
-COPY expected_columns.json /aki-system/
 COPY aki_detection.joblib /aki-system/
 COPY pandas_database.py /aki-system/
 COPY mllp_listener.py /aki-system/
