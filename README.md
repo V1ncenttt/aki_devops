@@ -121,7 +121,3 @@ Add additional notes about how to deploy this on a live system.
 - [Lorenz Heiler](mailto:lorenz.heiler24@imperial.ac.uk) - Group Member
 - [Vincent Lefeuve](mailto:vincent.lefeuve24@imperial.ac.uk) - Group Member
 - [Alison Lupton](mailto:alison.lupton24@imperial.ac.uk) - Group Member
-
-
-
-
