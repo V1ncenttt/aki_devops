@@ -70,6 +70,10 @@ def run_tests(with_coverage: bool) -> None:
     testsuite = unittest.TestLoader().discover(
         "test"
     )  # Ensure tests are in /test directory
+    
+    # loader = unittest.TestLoader()
+    # testsuite = loader.loadTestsFromName("test_dataoperator")
+     
     unittest.TextTestRunner(verbosity=2).run(testsuite)
 
     if with_coverage:

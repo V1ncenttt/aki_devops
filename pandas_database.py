@@ -7,7 +7,7 @@ data using pandas DataFrames. It supports data retrieval, historical processing,
 Authors:
 --------
 - Kerim Birgi (kerim.birgi24@imperial.ac.uk)
-- Alsion Lupton (alison.lupton24@imperial.ac.uk)
+- Alison Lupton (alison.lupton24@imperial.ac.uk)
 
 Classes:
 --------
