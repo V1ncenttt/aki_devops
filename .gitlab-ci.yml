@@ -1,23 +1,34 @@
-image: docker:cli
-services:
-    - docker:dind
-variables:
-    DOCKER_DRIVER: overlay2
-    COMPOSE_HTTP_TIMEOUT: 200 #incase of slow startup
+image: python:3.12
 
 stages:
     - build
     - test
 
-build:
+install_dependencies:
     stage: build
     script:
-        - echo "building system image..."
-        - docker build -t aki-system:$CI_COMMIT_BRANCH .
-        - docker images  # List images to verify build success
+        - echo "Building python virtual environment..."
+        - python -m venv venv
+        - source venv/bin/activate
+        - pip install -r requirements.txt
+        - pip install coverage "also add coverage for tests"
+        - echo "python virtual environment built!"
+    artifacts:
+        paths:
+            - venv/ # so venv survives across stages
+        expire_in: 1h
+    tags:
+        - shared # use DoC shared runners
 
-test:
+run-tests:
     stage: test
     script:
-        - echo "tests not implemented yet..."
+        - echo "running unittests"
+        - source /venv/bin/activate
+        - make unittest
+    dependencies:
+        - install_dependencies
+    tags:
+        - shared # use DoC shared runners
+    
     
