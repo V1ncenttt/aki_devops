@@ -24,7 +24,7 @@ run-tests:
     stage: test
     script:
         - echo "running unittests"
-        - source /venv/bin/activate
+        - source venv/bin/activate
         - make unittest
     dependencies:
         - install_dependencies
