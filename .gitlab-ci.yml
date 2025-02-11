@@ -12,7 +12,9 @@ stages:
 build:
     stage: build
     script:
-        - echo "build not implemented yet"
+        - echo "building system image..."
+        - docker build -t aki-system:$CI_COMMIT_BRANCH .
+        - docker images  # List images to verify build success
 
 test:
     stage: test
