@@ -67,9 +67,11 @@ class DataOperator:
 
         patient_vector = self.database.get_past_measurements(mrn, creatinine_value, test_time)
         
+        self.database.add_measurement(mrn, creatinine_value, test_time)
+        
         self.predict_queue.append((mrn, test_time, patient_vector))
 
-        self.database.add_measurement(mrn, creatinine_value, test_time)     
+           
 
 
     def process_adt_message(self, message):  
