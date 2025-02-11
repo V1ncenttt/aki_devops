@@ -11,7 +11,7 @@ install_dependencies:
         - python -m venv venv
         - source venv/bin/activate
         - pip install -r requirements.txt
-        - pip install coverage "also add coverage for tests"
+        - pip install coverage # also add coverage for tests
         - echo "python virtual environment built!"
     artifacts:
         paths:
