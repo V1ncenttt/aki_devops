@@ -1,0 +1,22 @@
+image: docker:cli
+services:
+    - docker:dind
+variables:
+    DOCKER_DRIVER: overlay2
+    COMPOSE_HTTP_TIMEOUT: 200 #incase of slow startup
+
+stages:
+    - build
+    - test
+
+build:
+    stage: build
+    script:
+        - docker-compose up -d
+        - docker-compose ps
+
+test:
+    stage: test
+    script:
+        - echo "tests not implemented yet..."
+    
