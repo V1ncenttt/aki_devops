@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+
+  mysql:
+      image: mysql:8.0
+      container_name: mysql_container
+      restart: always
+      environment:
+        MYSQL_ROOT_PASSWORD: rootpassword # Need to make this a secret
+        MYSQL_DATABASE: mydatabase
+        MYSQL_USER: myuser
+        MYSQL_PASSWORD: mypassword
+      ports:
+        - "3306:3306"
+      volumes:
+        - mysql_data:/var/lib/mysql
+        - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  aki-system:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aki-system
+    networks:
+      - my_network
+    logging:
+      driver: "local"
+    volumes:
+      - ./logs/aki-system.log:/var/log/aki-system.log
+
+volumes:
+  mysql_data:
