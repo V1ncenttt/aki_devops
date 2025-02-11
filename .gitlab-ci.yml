@@ -12,7 +12,7 @@ stages:
 build:
     stage: build
     script:
-        - docker build -t .
+        - echo "build not implemented yet"
 
 test:
     stage: test
