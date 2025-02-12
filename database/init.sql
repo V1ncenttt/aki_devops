@@ -23,5 +23,4 @@ CREATE INDEX idx_measurements_mrn ON Measurements(mrn);
 -- Index for fast queries on measurement_date
 CREATE INDEX idx_measurements_date ON Measurements(measurement_date);
 
--- Composite index on (mrn, measurement_date) (already covered by PRIMARY KEY)
--- No additional index needed here as PRIMARY KEY provides this automatically.
+-- Use SQL dump????
