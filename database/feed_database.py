@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 import pandas as pd
 
 # Database connection string
-DATABASE_URL = "mysql://myuser:mypassword@mysql_container:3306/hospital_db" #Will need to compose that with the secrets to not share the secrets
+DATABASE_URL = "mysql://user:password@mysql_container:3306/hospital_db" #Will need to compose that with the secrets to not share the secrets
 
 
 # Create SQLAlchemy engine

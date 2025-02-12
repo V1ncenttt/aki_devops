@@ -1,22 +1,27 @@
 version: '3.8'
-
 services:
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'db'
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: 'password'
+      MYSQL_ROOT_PASSWORD: 'password'
 
-  mysql:
-      image: mysql:8.0
-      container_name: mysql_container
-      restart: always
-      environment:
-        MYSQL_ROOT_PASSWORD: rootpassword # Need to make this a secret
-        MYSQL_DATABASE: mydatabase
-        MYSQL_USER: myuser
-        MYSQL_PASSWORD: mypassword
-      ports:
-        - "3306:3306"
-      volumes:
-        - mysql_data:/var/lib/mysql
-        - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      # <Port exposed> : <MySQL Port running inside container>
+      - '3306:3306'
+    expose:
+      # Opens port 3306 on the container
+      - '3306'
+      # Where our data will be persisted
+    volumes:
+      - my-db:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: ["bash", "-c", "docker-entrypoint.sh mysqld & sleep 10 && mysql -uroot -p$MYSQL_ROOT_PASSWORD db < /docker-entrypoint-initdb.d/init.sql && python3 /app/feed_database.py && wait"]
 
+    
   aki-system:
     build:
       context: .
@@ -29,5 +34,11 @@ services:
     volumes:
       - ./logs/aki-system.log:/var/log/aki-system.log
 
+# Names our volume
 volumes:
-  mysql_data:
+  my-db:
+
+
+networks:
+  my_network:
+    driver: bridge # README: Currently we initialise the db, create the tables, but I'm not able to use the script to feed it smh
