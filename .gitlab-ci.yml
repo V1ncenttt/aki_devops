@@ -19,9 +19,6 @@ install_dependencies:
         expire_in: 1h
     tags:
         - shared # use DoC shared runners
-    only:
-        - merge_requests
-        - api
 
 run-tests:
     stage: test
@@ -33,8 +30,5 @@ run-tests:
         - install_dependencies
     tags:
         - shared # use DoC shared runners
-    only:
-        - merge_requests
-        - api
     
     
