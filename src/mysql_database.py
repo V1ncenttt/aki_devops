@@ -23,7 +23,6 @@ class Measurement(Base):
 class MySQLDatabase(Database):
     def __init__(self, host, port, user, password, db):
         database_uri = f"mysql+pymysql://{user}:{password}@{host}:{port}/{db}"
-        
         try:
             self.engine = create_engine(database_uri, echo=True)
             self.Session = sessionmaker(bind=self.engine)
@@ -55,10 +54,10 @@ class MySQLDatabase(Database):
             patient = Patient(mrn=mrn, age=age, sex=sex)
             self.session.add(patient)
             self.session.commit()
-            print(f"Added patient with MRN {mrn}.")
+            print(f"Patient with MRN {mrn} added/updated.")
         except SQLAlchemyError as e:
             self.session.rollback()
-            print(f"Error adding patient: {e}")
+            print(f"Error adding/updating patient: {e}")
 
     def add_measurement(self, mrn: str, creatinine_result: float, creatinine_date=None) -> None:
         try:
@@ -83,7 +82,7 @@ class MySQLDatabase(Database):
             measurement_entry = Measurement(mrn=mrn, creatinine_result=creatinine_result, creatinine_date=creatinine_date)
             self.session.add(measurement_entry)
             self.session.commit()
-            print(f"Added measurement for MRN {mrn}.")
+            print(f"Measurement for MRN {mrn} on {measurement_date} added/updated.")
         except SQLAlchemyError as e:
             self.session.rollback()
             print(f"Error adding measurement: {e}")
@@ -162,6 +161,4 @@ class MySQLDatabase(Database):
 if __name__ == "__main__":
     db = MySQLDatabase("localhost","3306","root","password","hospital_db")
     db.connect()
-    print(db.get_data(100005546))
-    #TODO: Unit tests
-
+    print(db.get_data("100005546"))
