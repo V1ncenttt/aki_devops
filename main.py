@@ -46,14 +46,6 @@ def main():
     try:
         while True:
             mllp_listener.run()
-
-            # TODO
-            keep_running = data_operator.run()
-            if keep_running:
-                page_team = model.run()
-                if not (page_team == None):
-                    pager.run(*page_team)
-
             
     except Exception as e:
         print(f"Exception occured:\n{e}")

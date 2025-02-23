@@ -109,49 +109,54 @@ class MllpListener:
         """
 
         buffer = b""
+        while True: # should we replace this while true with smth
+            try:
+                data = self.client_socket.recv(1024)
+                if not data:
+                    logging.info("[-] No more data, closing connection.")
+                    self.shutdown()
 
-        try:
-            data = self.client_socket.recv(1024)
-            if not data:
-                logging.info("[-] No more data, closing connection.")
-                self.shutdown()
+                buffer += data
 
-            buffer += data
+                while START_BLOCK in buffer and END_BLOCK in buffer:
+                    start_index = buffer.index(START_BLOCK) + 1
+                    end_index = buffer.index(END_BLOCK)
+                    hl7_message = buffer[start_index:end_index].decode("utf-8").strip()
+                    buffer = buffer[end_index + len(END_BLOCK) :]
 
-            while START_BLOCK in buffer and END_BLOCK in buffer:
-                start_index = buffer.index(START_BLOCK) + 1
-                end_index = buffer.index(END_BLOCK)
-                hl7_message = buffer[start_index:end_index].decode("utf-8").strip()
-                buffer = buffer[end_index + len(END_BLOCK) :]
+                    parsed_message = self.parser.parse(hl7_message)
+                    
+                    
+                    if parsed_message is None or parsed_message[0] is None:
+                        logging.error("Received invalid HL7 message or unknown message type:")
+                        logging.error(f"{parsed_message}")
+                        # return back to main.py without sending an ACK
+                        # TODO: introduce some safety mechanism here
+                        return
 
-                parsed_message = self.parser.parse(hl7_message)
+                    # Invariant: message is parsed correctly
+                    try:
+                        # forward message to data_operator for further processing
+                        status = self.data_operator.process_message(parsed_message)
+
+                        # return the parsed_message to main.py so that it knows everything worked 
+                        # and can then send the ack-message
+                        if status:
+                            self.send_ack(hl7_message)
+                        else:
+                            # TODO: Implement safety mechanism if status is false!
+                            logging.error(f"Some error occured, check logs. Did not process the following message correctly:\n{hl7_message}")
+                        return
+
+                    except Exception as e:
+                        # log the error
+                        logging.error(f"Data Operator could not process message! \nError received: \n\n{e}")
+                        # and return to main.py system loop without sending an ACK message
+                        # TODO: implement/check fail safety mechanisms
+                        return
+
+                    
+
+            except socket.timeout:
+                logging.warning("[-] Read timeout. Closing connection.")
                 
-                
-                if parsed_message is None or parsed_message[0] is None:
-                    logging.error("Received invalid HL7 message or unknown message type:")
-                    logging.error(f"{parsed_message}")
-                    # return back to main.py without sending an ACK
-                    # TODO: introduce some safety mechanism here
-                    return None
-
-                # Invariant: message is parsed correctly
-                try:
-                    # forward message to data_operator for further processing
-                    self.data_operator.process_message(parsed_message)
-
-                    # return the parsed_message to main.py so that it knows everything worked 
-                    # and can then send the ack-message
-                    self.send_ack(hl7_message)
-
-                except Exception as e:
-                    # log the error
-                    logging.error(f"Data Operator could not process message! \nError received: \n\n{e}")
-                    # and return to main.py system loop without sending an ACK message
-                    # TODO: implement/check fail safety mechanisms
-                    return None
-
-                
-
-        except socket.timeout:
-            logging.warning("[-] Read timeout. Closing connection.")
-            

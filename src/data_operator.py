@@ -69,15 +69,19 @@ class DataOperator:
 
         patient_vector = self.database.get_past_measurements(mrn, creatinine_value, test_time)
         
-        #self.predict_queue.append((mrn, test_time, patient_vector))
-        # if aki-prediction is positive model returns patient info for paging, else None
-        positive_prediction = self.model.predict_aki(patient_vector)
+        # if aki-prediction is positive, send a pager alert
+        try:
+            positive_prediction = self.model.predict_aki(patient_vector)
+        except Exception as e:
+            logging.error(f"Error from model.py\nException:\n{e}")
+            return False
+        
         if positive_prediction:
             self.pager.send_pager_alert(mrn, test_time)
 
         # kept this from before
         self.database.add_measurement(mrn, creatinine_value, test_time) 
-        return
+        return True
 
     def process_adt_message(self, message):  
         """
@@ -98,7 +102,7 @@ class DataOperator:
         self.database.add_patient(mrn, age, sex)
 
         logging.info(f"Patient {name} with MRN {mrn} added to the database")
-        return False
+        return True
         
 
     def process_oru_message(self, message):
@@ -117,8 +121,8 @@ class DataOperator:
         test_time = message[2][0]["test_time"]
 
         logging.info(f"Patient {mrn} has creatinine value {creatinine_value} at {test_time}")
-        self.process_patient(mrn, creatinine_value, test_time)
-        return True
+        status = self.process_patient(mrn, creatinine_value, test_time)
+        return status
 
     def process_message(self, message):
         """
@@ -131,7 +135,8 @@ class DataOperator:
             bool: True if a prediction was made, False otherwise.
         """
         if message[0] == "ORU^R01":
-            return self.process_oru_message(message) # need to return false after 
+            status = self.process_oru_message(message) # need to return false after 
         elif message[0] == "ADT^A01":
-            return self.process_adt_message(message) # need to return true after 
-
+            status = self.process_adt_message(message) # need to return true after 
+        
+        return status # return True if everything worked, False if something went wrong, so that we do not send an ack regardless
