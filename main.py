@@ -18,6 +18,7 @@ from src.mllp_listener import MllpListener
 from src.model import Model
 from src.data_operator import DataOperator
 from src.pager import Pager
+from src.mysql_database import MySQLDatabase
 import os
 
 def main():
@@ -35,8 +36,9 @@ def main():
     parsed_queue = []#asyncio.Queue()
     predict_queue = []
     patient_data = {}
-    database = PandasDatabase('data/history.csv')
+    database = MySQLDatabase()
     mllp_listener = MllpListener(mllp_address, msg_queue)
+    #TODO: Does the database get automatically filled when initialised? 
     data_operator = DataOperator(msg_queue, predict_queue, database)
     model = Model(predict_queue)
     pager = Pager(pager_address)

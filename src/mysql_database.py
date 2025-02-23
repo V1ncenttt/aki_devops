@@ -3,6 +3,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker, declarative_base #Safer, automatic sanitizing
 from datetime import datetime
 from database import Database
+import pandas as pd
 
 
 Base = declarative_base()
@@ -52,7 +53,8 @@ class MySQLDatabase(Database):
 
     def add_measurement(self, mrn: str, measurement_value: float, measurement_date=None) -> None:
         try:
-            measurement_date = measurement_date or datetime.now(datetime.zone.utc)  
+            measurement_date = measurement_date or datetime.utcnow() #TODO: I think this is the correct way instead of the below
+            # measurement_date = measurement_date or datetime.now(datetime.zone.utc)  
             measurement_entry = Measurement(mrn=mrn, measurement_value=measurement_value, measurement_date=measurement_date)
             self.session.add(measurement_entry)
             self.session.commit()
@@ -63,27 +65,44 @@ class MySQLDatabase(Database):
 
     def get_data(self, mrn: str):
         """
-        Retrieves historical creatinine measurements for a given patient, using the mrn.
-        
+        Retrieves historical creatinine measurements for a given patient as a pandas DataFrame.
+
         Args:
-            mrn (int): Patient's medical record number.
-            creatinine_value (float): New creatinine measurement.
-            test_time (str): Timestamp of the new measurement.
-        
+            mrn (str): Medical record number (MRN) of the patient.
+
         Returns:
-            DataFrame: Patien data.
+            DataFrame: DataFrame with columns ['measurement_date', 'measurement_value'] sorted by date.
         """
         
         #NOTE: the return value of this should be a "patient vector" that gets passed to the predict queue with
         # the other metrics as: self.predict_queue.append((mrn, test_time, patient_vector))
         # flow is then to predict_aki --> preprocess --> process_features, so this needs to be the right 
         # format for model.process_features basically
+        #NOTE: I am returning this as a df right now bc that's what the model wants, but if you want to change this to be a tuple 
+        # that's fine we just have to fix the model 
+
+
         try:
-            data = self.session.query(Measurement).filter_by(mrn=mrn).all()
-            return [(entry.measurement_value, entry.measurement_date) for entry in data]
+            data = (
+                self.session.query(Measurement.measurement_date, Measurement.measurement_value)
+                .filter_by(mrn=mrn)
+                .order_by(Measurement.measurement_date.asc())
+                .all()
+            )
+            df = pd.DataFrame(data, columns=['measurement_date', 'measurement_value'])
+
+            # Ensure measurement_date is in datetime format
+            df['measurement_date'] = pd.to_datetime(df['measurement_date'], errors='coerce')
+
+            return df
+
         except SQLAlchemyError as e:
             print(f"Error retrieving data: {e}")
-            return []
+            return pd.DataFrame(columns=['measurement_date', 'measurement_value'])
+
+        
+        
+        
 
 if __name__ == "__main__":
     db = MySQLDatabase("localhost","3306","root","passwosrd","hospital_db")

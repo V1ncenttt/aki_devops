@@ -1,3 +1,4 @@
+import logging
 """
 Data Operator Module
 ====================
@@ -7,7 +8,7 @@ and queues predictions for AKI detection.
 Authors:
 --------
 - Kerim Birgi (kerim.birgi24@imperial.ac.uk)
-- Alsion Lupton (alison.lupton24@imperial.ac.uk)
+- Alison Lupton (alison.lupton24@imperial.ac.uk)
 
 Classes:
 --------
@@ -64,10 +65,13 @@ class DataOperator:
             test_time (str): Timestamp of the test.
         """
         logging.info(f"[WORKER] Processing Patient {mrn} at {test_time}...")
-
-        patient_vector = self.database.get_past_measurements(mrn, creatinine_value, test_time)
         
-        self.database.add_measurement(mrn, creatinine_value, test_time)
+        # Measurment added first 
+        self.database.add_measurement(mrn, creatinine_value, test_time) 
+        
+        patient_vector = self.database.get_data(mrn) # Pull all data, including new measurment
+        logging.info('patient_vector', patient_vector)
+    
         
         self.predict_queue.append((mrn, test_time, patient_vector))
 
