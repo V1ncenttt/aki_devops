@@ -17,7 +17,6 @@ Usage:
 Example:
     listener = MllpListener("127.0.0.1:5000", msg_queue)
     listener.run()
-
 """
 
 import os
@@ -103,7 +102,7 @@ class MllpListener:
         try:
             os.makedirs(os.path.dirname(self.STATE_FILE), exist_ok=True)
             with open(self.STATE_FILE, "w") as f:
-                f.write("\n".join([str(msg) for msg in self.msg_queue]))
+                f.write("\n".join(map(str, self.msg_queue)))  # Convert all messages to strings before saving
             logging.info(f"[STATE] Successfully saved {len(self.msg_queue)} pending messages.")
         except Exception as e:
             logging.error(f"[ERROR] Failed to save state: {e}")
@@ -121,9 +120,30 @@ class MllpListener:
                 messages = f.read().splitlines()
                 if messages:
                     self.msg_queue.extend(messages)
-                    logging.info(f"[STATE] Successfully loaded {len(messages)} pending messages.")
+                    logging.info(f"[STATE] Successfully loaded {len(messages)} pending messages. Resending now...")
         except Exception as e:
             logging.error(f"[ERROR] Failed to load saved state: {e}")
+
+    def process_saved_messages(self):
+        """
+        Processes messages that were loaded from the state file upon restart.
+        """
+        if not self.msg_queue:
+            return  # No saved messages to process
+
+        logging.info(f"[STATE] Reprocessing {len(self.msg_queue)} saved messages...")
+        
+        for msg in self.msg_queue:
+            parsed_message = self.parser.parse(msg)
+            if parsed_message is not None and parsed_message[0] is not None:
+                ack_message = self.parser.generate_hl7_ack(msg)
+                try:
+                    self.client_socket.sendall(ack_message.encode("utf-8"))
+                    logging.info(f"[ACK SENT] for restored message.")
+                except Exception as e:
+                    logging.error(f"[ERROR] Failed to resend ACK: {e}")
+        
+        self.msg_queue.clear()  # Clear queue after reprocessing messages
 
     def shutdown(self):
         """
@@ -146,6 +166,7 @@ class MllpListener:
                 if not data:
                     logging.info("[-] No more data, closing connection.")
                     self.shutdown()
+                    break
 
                 buffer += data
 
@@ -161,19 +182,19 @@ class MllpListener:
                         logging.error("Received invalid HL7 message or unknown message type.")
                         break  # Prevents further errors
 
-                    self.msg_queue.append(parsed_message)
+                    self.msg_queue.append(hl7_message)
 
                     ack_message = self.parser.generate_hl7_ack(hl7_message)
-                    self.client_socket.sendall(ack_message)
+                    self.client_socket.sendall(ack_message.encode("utf-8"))
                     logging.info(f"[ACK SENT]")
-                    return
 
             except socket.timeout:
                 logging.warning("[-] Read timeout. Closing connection.")
 
     def run(self):
         """
-        Starts the HL7 listener.
+        Starts the HL7 listener and processes saved messages on startup.
         """
+        self.process_saved_messages()  # Reprocess messages before listening for new ones
         while self.running:
             self.hl7_listen()
