@@ -17,6 +17,7 @@ patients_df.to_csv("data/patients.csv", index=False)
 measurements = []
 for index, row in df.iterrows():
     mrn = row["mrn"]
+    # TODO: should this be dynamic? 
     for i in range(26):  # Adjust this if the number of measurement columns changes
         date_col = f"creatinine_date_{i}"
         result_col = f"creatinine_result_{i}"

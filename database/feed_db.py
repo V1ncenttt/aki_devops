@@ -8,7 +8,7 @@ DATABASE_URL = "mysql://root:password@0.0.0.0:3306/hospital_db" #Will need to co
 
 # Create SQLAlchemy engine
 engine = create_engine(DATABASE_URL)
-
+#TODO: For Alison to understand, does this only run once? 
 with engine.connect() as conn:
     
     #Load df

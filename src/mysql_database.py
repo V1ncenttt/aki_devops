@@ -62,6 +62,22 @@ class MySQLDatabase(Database):
             print(f"Error adding measurement: {e}")
 
     def get_data(self, mrn: str):
+        """
+        Retrieves historical creatinine measurements for a given patient, using the mrn.
+        
+        Args:
+            mrn (int): Patient's medical record number.
+            creatinine_value (float): New creatinine measurement.
+            test_time (str): Timestamp of the new measurement.
+        
+        Returns:
+            DataFrame: Patien data.
+        """
+        
+        #NOTE: the return value of this should be a "patient vector" that gets passed to the predict queue with
+        # the other metrics as: self.predict_queue.append((mrn, test_time, patient_vector))
+        # flow is then to predict_aki --> preprocess --> process_features, so this needs to be the right 
+        # format for model.process_features basically
         try:
             data = self.session.query(Measurement).filter_by(mrn=mrn).all()
             return [(entry.measurement_value, entry.measurement_date) for entry in data]

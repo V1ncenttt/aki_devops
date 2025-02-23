@@ -84,3 +84,5 @@ class Database(ABC):
             and should be implemented by a subclass
         """
         raise NotImplementedError
+    
+    #TODO: Can we delete this file?
