@@ -24,9 +24,9 @@ import os
 import logging
 import socket
 import time
+import signal
+import sys
 from src.parser import HL7Parser, START_BLOCK, END_BLOCK
-
-import os
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -45,6 +45,8 @@ class MllpListener:
     - `client_socket (socket)`: Active socket connection to the HL7 simulator.
     """
 
+    STATE_FILE = "/aki-system/state/state_backup.txt"
+
     def __init__(self, mllp_address, msg_queue):
         """
         Initializes the MLLP listener and connects to the HL7 simulator.
@@ -57,17 +59,22 @@ class MllpListener:
         self.mllp_address = mllp_address
         self.msg_queue = msg_queue
         self.client_socket = None
+        self.running = True  # Control flag for safe shutdown
+        self.load_state()  # Load saved state if available
         self.open_connection()
-    
+
+        # Register SIGTERM handler
+        signal.signal(signal.SIGTERM, self.handle_sigterm)
+
     def open_connection(self):
         """
         Establishes a connection to the HL7 simulator via MLLP.
         Retries every 5 seconds if the connection fails.
         """
-        while True:
+        while self.running:
             try:
-                mllp_host = self.mllp_address.split(":")[0]
-                mllp_port = int(self.mllp_address.split(":")[1])
+                mllp_host, mllp_port = self.mllp_address.split(":")
+                mllp_port = int(mllp_port)
                 logging.info(f"[*] Connecting to HL7 Simulator at {mllp_host}:{mllp_port}...")
                 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 client_socket.settimeout(10)
@@ -78,29 +85,62 @@ class MllpListener:
             except (ConnectionRefusedError, ConnectionResetError):
                 logging.error(f"[-] Could not connect to {mllp_host}:{mllp_port}, retrying in 5s...")
                 time.sleep(5)
-        return
 
+    def handle_sigterm(self, signal_num, frame):
+        """
+        Handles SIGTERM signal for graceful shutdown.
+        """
+        logging.info(f"[SIGTERM] Received termination signal ({signal_num}). Stopping gracefully...")
+        self.running = False  # Stop listener loop
+        self.save_state()
+        self.shutdown()
 
+    def save_state(self):
+        """
+        Saves the current state (e.g., messages in queue) before shutdown.
+        Ensures that the state file exists before writing.
+        """
+        try:
+            os.makedirs(os.path.dirname(self.STATE_FILE), exist_ok=True)
+            with open(self.STATE_FILE, "w") as f:
+                f.write("\n".join([str(msg) for msg in self.msg_queue]))
+            logging.info(f"[STATE] Successfully saved {len(self.msg_queue)} pending messages.")
+        except Exception as e:
+            logging.error(f"[ERROR] Failed to save state: {e}")
+
+    def load_state(self):
+        """
+        Loads the saved state from the previous session, if it exists.
+        """
+        if not os.path.exists(self.STATE_FILE):
+            logging.info("[STATE] No previous state found. Starting fresh.")
+            return
+
+        try:
+            with open(self.STATE_FILE, "r") as f:
+                messages = f.read().splitlines()
+                if messages:
+                    self.msg_queue.extend(messages)
+                    logging.info(f"[STATE] Successfully loaded {len(messages)} pending messages.")
+        except Exception as e:
+            logging.error(f"[ERROR] Failed to load saved state: {e}")
 
     def shutdown(self):
         """
-        Closes the connection and exits the system.
+        Closes the MLLP connection and safely exits the system.
         """
-        self.client_socket.close()
+        if self.client_socket:
+            self.client_socket.close()
         logging.info("[*] Connection closed. Quitting...")
-        exit()
-        return
-
+        sys.exit(0)
 
     def hl7_listen(self):
         """
         Listens for HL7 messages, processes them, and stores valid messages in the message queue.
-        
         Receives data over the MLLP connection, extracts messages, and sends an acknowledgment (ACK).
         """
-
         buffer = b""
-        while True:
+        while self.running:
             try:
                 data = self.client_socket.recv(1024)
                 if not data:
@@ -113,11 +153,10 @@ class MllpListener:
                     start_index = buffer.index(START_BLOCK) + 1
                     end_index = buffer.index(END_BLOCK)
                     hl7_message = buffer[start_index:end_index].decode("utf-8").strip()
-                    buffer = buffer[end_index + len(END_BLOCK) :]
+                    buffer = buffer[end_index + len(END_BLOCK):]
 
                     parsed_message = self.parser.parse(hl7_message)
-                    
-                    
+
                     if parsed_message is None or parsed_message[0] is None:
                         logging.error("Received invalid HL7 message or unknown message type.")
                         break  # Prevents further errors
@@ -132,11 +171,9 @@ class MllpListener:
             except socket.timeout:
                 logging.warning("[-] Read timeout. Closing connection.")
 
-    
     def run(self):
         """
         Starts the HL7 listener.
         """
-        self.hl7_listen()
-        return
-            
+        while self.running:
+            self.hl7_listen()
