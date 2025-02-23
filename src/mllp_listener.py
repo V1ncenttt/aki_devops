@@ -150,7 +150,7 @@ class MllpListener:
 
                     except Exception as e:
                         # log the error
-                        logging.error(f"Data Operator could not process message! \nError received: \n\n{e}")
+                        logging.error(f"Data Operator could not process message!\nError received:\n{e}")
                         # and return to main.py system loop without sending an ACK message
                         # TODO: implement/check fail safety mechanisms
                         return

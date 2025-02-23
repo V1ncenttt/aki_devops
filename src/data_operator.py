@@ -138,5 +138,10 @@ class DataOperator:
             status = self.process_oru_message(message) # need to return false after 
         elif message[0] == "ADT^A01":
             status = self.process_adt_message(message) # need to return true after 
+        elif message[0] == "ADT^A03":
+            status = True # TODO: THIS IS A PLACEHOLDER, NEED TO IMPLEMENT PROCEDURE FOR THIS
+        else:
+            logging.error(f"Unknown Message type {message}")
+            raise ValueError(f"Unknown Message type{message}")
         
         return status # return True if everything worked, False if something went wrong, so that we do not send an ack regardless
