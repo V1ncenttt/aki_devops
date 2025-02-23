@@ -25,6 +25,7 @@ import logging
 import socket
 import time
 from src.parser import HL7Parser, START_BLOCK, END_BLOCK
+from src.data_operator import DataOperator
 
 import os
 
@@ -45,7 +46,7 @@ class MllpListener:
     - `client_socket (socket)`: Active socket connection to the HL7 simulator.
     """
 
-    def __init__(self, mllp_address, msg_queue):
+    def __init__(self, mllp_address: str, parser: HL7Parser, data_operator: DataOperator):
         """
         Initializes the MLLP listener and connects to the HL7 simulator.
         
@@ -53,9 +54,9 @@ class MllpListener:
             mllp_address (str): The IP and port of the HL7 simulator.
             msg_queue (list): The message queue to store parsed HL7 messages.
         """
-        self.parser = HL7Parser() 
+        self.parser = parser 
         self.mllp_address = mllp_address
-        self.msg_queue = msg_queue
+        self.data_operator = data_operator
         self.client_socket = None
         self.open_connection()
     
@@ -90,9 +91,17 @@ class MllpListener:
         logging.info("[*] Connection closed. Quitting...")
         exit()
         return
+    
+    def send_ack(self, hl7_message):
+        # Invariant: Patient from 'parsed_message' has been processed correctly
+        # now at the very end we send an ack, maybe move this to main.py
+        ack_message = self.parser.generate_hl7_ack(hl7_message)
+        self.client_socket.sendall(ack_message)
+        logging.info(f"[ACK SENT]")
+        return
 
 
-    def hl7_listen(self):
+    def run(self):
         """
         Listens for HL7 messages, processes them, and stores valid messages in the message queue.
         
@@ -100,43 +109,49 @@ class MllpListener:
         """
 
         buffer = b""
-        while True:
-            try:
-                data = self.client_socket.recv(1024)
-                if not data:
-                    logging.info("[-] No more data, closing connection.")
-                    self.shutdown()
 
-                buffer += data
+        try:
+            data = self.client_socket.recv(1024)
+            if not data:
+                logging.info("[-] No more data, closing connection.")
+                self.shutdown()
 
-                while START_BLOCK in buffer and END_BLOCK in buffer:
-                    start_index = buffer.index(START_BLOCK) + 1
-                    end_index = buffer.index(END_BLOCK)
-                    hl7_message = buffer[start_index:end_index].decode("utf-8").strip()
-                    buffer = buffer[end_index + len(END_BLOCK) :]
+            buffer += data
 
-                    parsed_message = self.parser.parse(hl7_message)
-                    
-                    
-                    if parsed_message is None or parsed_message[0] is None:
-                        logging.error("Received invalid HL7 message or unknown message type.")
-                        break  # Prevents further errors
+            while START_BLOCK in buffer and END_BLOCK in buffer:
+                start_index = buffer.index(START_BLOCK) + 1
+                end_index = buffer.index(END_BLOCK)
+                hl7_message = buffer[start_index:end_index].decode("utf-8").strip()
+                buffer = buffer[end_index + len(END_BLOCK) :]
 
-                    self.msg_queue.append(parsed_message)
+                parsed_message = self.parser.parse(hl7_message)
+                
+                
+                if parsed_message is None or parsed_message[0] is None:
+                    logging.error("Received invalid HL7 message or unknown message type:")
+                    logging.error(f"{parsed_message}")
+                    # return back to main.py without sending an ACK
+                    # TODO: introduce some safety mechanism here
+                    return None
 
-                    ack_message = self.parser.generate_hl7_ack(hl7_message)
-                    self.client_socket.sendall(ack_message)
-                    logging.info(f"[ACK SENT]")
-                    return
+                # Invariant: message is parsed correctly
+                try:
+                    # forward message to data_operator for further processing
+                    self.data_operator.process_message(parsed_message)
 
-            except socket.timeout:
-                logging.warning("[-] Read timeout. Closing connection.")
+                    # return the parsed_message to main.py so that it knows everything worked 
+                    # and can then send the ack-message
+                    self.send_ack(hl7_message)
 
-    
-    def run(self):
-        """
-        Starts the HL7 listener.
-        """
-        self.hl7_listen()
-        return
+                except Exception as e:
+                    # log the error
+                    logging.error(f"Data Operator could not process message! \nError received: \n\n{e}")
+                    # and return to main.py system loop without sending an ACK message
+                    # TODO: implement/check fail safety mechanisms
+                    return None
+
+                
+
+        except socket.timeout:
+            logging.warning("[-] Read timeout. Closing connection.")
             

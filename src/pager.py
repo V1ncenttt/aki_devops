@@ -72,14 +72,3 @@ class Pager:
                 logging.warning(f"[ALERT FAILED] Retrying... {e}")
                 time.sleep(1)  # Wait before retrying
         return
-    
-    def run(self, mrn, test_time):
-        """
-        Executes the pager alert process.
-        
-        Args:
-            mrn (int): Patient's medical record number.
-            test_time (str): Time of the test in ISO format.
-        """
-        self.send_pager_alert(mrn, test_time)
-        return

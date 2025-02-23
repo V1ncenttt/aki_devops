@@ -24,6 +24,8 @@ Example:
 
 import logging
 from src.database import Database
+from src.model import Model
+from src.pager import Pager
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -40,7 +42,7 @@ class DataOperator:
     - `msg_queue (list)`: Queue for storing incoming HL7 messages.
     - `predict_queue (list)`: Queue for storing patient data for prediction.
     """
-    def __init__(self, msg_queue, predict_queue, database: Database):
+    def __init__(self, database: Database, model: Model, pager: Pager):
         """
         Initializes the DataOperator with message and prediction queues, and a patient database.
         
@@ -50,8 +52,8 @@ class DataOperator:
             database (Database): Database instance for patient record management.
         """
         self.database = database 
-        self.msg_queue = msg_queue
-        self.predict_queue = predict_queue
+        self.model = model
+        self.pager = pager
 
 
     def process_patient(self, mrn, creatinine_value, test_time):
@@ -67,10 +69,15 @@ class DataOperator:
 
         patient_vector = self.database.get_past_measurements(mrn, creatinine_value, test_time)
         
-        self.predict_queue.append((mrn, test_time, patient_vector))
+        #self.predict_queue.append((mrn, test_time, patient_vector))
+        # if aki-prediction is positive model returns patient info for paging, else None
+        positive_prediction = self.model.predict_aki(patient_vector)
+        if positive_prediction:
+            self.pager.send_pager_alert(mrn, test_time)
 
-        self.database.add_measurement(mrn, creatinine_value, test_time)     
-
+        # kept this from before
+        self.database.add_measurement(mrn, creatinine_value, test_time) 
+        return
 
     def process_adt_message(self, message):  
         """
@@ -127,17 +134,4 @@ class DataOperator:
             return self.process_oru_message(message) # need to return false after 
         elif message[0] == "ADT^A01":
             return self.process_adt_message(message) # need to return true after 
-            
-    def run(self):
-        """
-        Executes the processing of the next message in the queue.
-        """
-       
-        # input is parsed message 
-        message = self.msg_queue.pop(0)
-        
-        if message is None or message[0] is None:
-            logging.error("Received invalid HL7 message or unknown message type.")
-            return  # Stop errors
-        else:
-            return self.process_message(message)
+
