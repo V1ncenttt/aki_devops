@@ -1,4 +1,33 @@
 services:
+  
+
+  db:
+    container_name: db
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'hospital_db'
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: 'password'
+      MYSQL_ROOT_PASSWORD: 'password'
+    ports:
+      - '3306:3306'
+    expose:
+      - '3306'
+    command: --local-infile=1
+    volumes:
+      - my-db:/var/lib/mysql  # Persistent storage for MySQL data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql  # Runs SQL script on first startup
+
+    networks:
+      - my_network  # Attach db to network
+
+  # adminer:  
+  #   image: adminer
+  #   restart: always
+  #   ports:
+  #     - "8080:8080"
+
   message-simulator:
     build:
       context: ./simulation
@@ -15,6 +44,7 @@ services:
       driver: "local"
     volumes:
       - ./logs/simulation.log:/var/log/simulation.log
+    
 
   aki-system:
     build:
@@ -27,7 +57,15 @@ services:
       driver: "local"
     volumes:
       - ./logs/aki-system.log:/var/log/aki-system.log
+    depends_on:
+      - db  # Ensure db starts first 
+      #TODO: check if this is okay
+
+
+volumes:
+  my-db:
 
 networks:
   my_network:
     driver: bridge
+
