@@ -24,6 +24,8 @@ Example:
 
 import logging
 from src.database import Database
+from src.model import Model
+from src.pager import Pager
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -40,7 +42,7 @@ class DataOperator:
     - `msg_queue (list)`: Queue for storing incoming HL7 messages.
     - `predict_queue (list)`: Queue for storing patient data for prediction.
     """
-    def __init__(self, msg_queue, predict_queue, database: Database):
+    def __init__(self, database: Database, model: Model, pager: Pager):
         """
         Initializes the DataOperator with message and prediction queues, and a patient database.
         
@@ -50,8 +52,8 @@ class DataOperator:
             database (Database): Database instance for patient record management.
         """
         self.database = database 
-        self.msg_queue = msg_queue
-        self.predict_queue = predict_queue
+        self.model = model
+        self.pager = pager
 
 
     def process_patient(self, mrn, creatinine_value, test_time):
@@ -67,10 +69,19 @@ class DataOperator:
 
         patient_vector = self.database.get_past_measurements(mrn, creatinine_value, test_time)
         
-        self.predict_queue.append((mrn, test_time, patient_vector))
+        # if aki-prediction is positive, send a pager alert
+        try:
+            positive_prediction = self.model.predict_aki(patient_vector)
+        except Exception as e:
+            logging.error(f"Error from model.py\nException:\n{e}")
+            return False
+        
+        if positive_prediction:
+            self.pager.send_pager_alert(mrn, test_time)
 
-        self.database.add_measurement(mrn, creatinine_value, test_time)     
-
+        # kept this from before
+        self.database.add_measurement(mrn, creatinine_value, test_time) 
+        return True
 
     def process_adt_message(self, message):  
         """
@@ -91,7 +102,7 @@ class DataOperator:
         self.database.add_patient(mrn, age, sex)
 
         logging.info(f"Patient {name} with MRN {mrn} added to the database")
-        return False
+        return True
         
 
     def process_oru_message(self, message):
@@ -110,8 +121,8 @@ class DataOperator:
         test_time = message[2][0]["test_time"]
 
         logging.info(f"Patient {mrn} has creatinine value {creatinine_value} at {test_time}")
-        self.process_patient(mrn, creatinine_value, test_time)
-        return True
+        status = self.process_patient(mrn, creatinine_value, test_time)
+        return status
 
     def process_message(self, message):
         """
@@ -124,20 +135,13 @@ class DataOperator:
             bool: True if a prediction was made, False otherwise.
         """
         if message[0] == "ORU^R01":
-            return self.process_oru_message(message) # need to return false after 
+            status = self.process_oru_message(message) # need to return false after 
         elif message[0] == "ADT^A01":
-            return self.process_adt_message(message) # need to return true after 
-            
-    def run(self):
-        """
-        Executes the processing of the next message in the queue.
-        """
-       
-        # input is parsed message 
-        message = self.msg_queue.pop(0)
-        
-        if message is None or message[0] is None:
-            logging.error("Received invalid HL7 message or unknown message type.")
-            return  # Stop errors
+            status = self.process_adt_message(message) # need to return true after 
+        elif message[0] == "ADT^A03":
+            status = True # TODO: THIS IS A PLACEHOLDER, NEED TO IMPLEMENT PROCEDURE FOR THIS
         else:
-            return self.process_message(message)
+            logging.error(f"Unknown Message type {message}")
+            raise ValueError(f"Unknown Message type{message}")
+        
+        return status # return True if everything worked, False if something went wrong, so that we do not send an ack regardless
