@@ -106,7 +106,7 @@ spec:
         lifecycle:
           preStop:
             exec:
-              command: ["/bin/sh", "-c", "echo 'Saving state...'; cp /aki-system/state/state.db /aki-system/state/backup.db; sleep 5"]
+              command: ["/bin/sh", "-c", "echo 'Saving state...'; [ -f /aki-system/state/state_backup.txt ] && mv /aki-system/state/state_backup.txt /aki-system/state/backup.txt; sleep 5"]
 
       initContainers:
       - name: copy-hospital-history
@@ -114,6 +114,8 @@ spec:
         volumeMounts:
           - mountPath: "/data"
             name: hospital-history
+          - mountPath: "/aki-system/state"  # Ensures state is properly mounted
+            name: aki-detection-state
         resources:
           requests:
             memory: "500Mi"  # Reduced to avoid scheduling issues
@@ -126,4 +128,5 @@ spec:
       - name: aki-detection-state
         persistentVolumeClaim:
           claimName: aki-detection-state
+
 
