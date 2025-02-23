@@ -5,11 +5,31 @@ metadata:
   namespace: europe
 spec:
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany  # Allows multiple nodes to mount storage
   storageClassName: managed-csi
   resources:
     requests:
       storage: 1Gi
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: high-priority
+value: 1000000
+preemptionPolicy: PreemptLowerPriority
+globalDefault: false
+description: "Priority for critical AKI detection workloads"
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aki-detection-pdb
+  namespace: europe
+spec:
+  minAvailable: 1  # Ensures at least 1 pod is always running
+  selector:
+    matchLabels:
+      app: aki-detection
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -17,9 +37,9 @@ metadata:
   name: aki-detection
   namespace: europe
 spec:
-  replicas: 1
+  replicas: 1  # Can be increased for high availability
   strategy:
-      type: Recreate
+    type: Recreate
   selector:
     matchLabels:
       app: aki-detection
@@ -28,14 +48,18 @@ spec:
       labels:
         app: aki-detection
     spec:
+      priorityClassName: high-priority  # Ensure this pod gets priority in rescheduling
+      tolerations:
+      - key: "node.kubernetes.io/unreachable"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 10  # Faster pod eviction on node failure
+
       containers:
       - name: aki-detection
         image: imperialswemlsspring2025.azurecr.io/coursework4-europe
-        # Replace this with the correct command for your solution
         command:
         args:
-        # Replace this with however you tell your solution where to find the
-        # initial history file. /data is mounted below.
         - "--history=/aki-system/data/history.csv"
         env:
         - name: MLLP_ADDRESS
@@ -51,10 +75,39 @@ spec:
             readOnly: true
           - mountPath: "/aki-system/state"
             name: aki-detection-state
+
+        # Resource Requests: Ensures the pod gets at least 1 CPU and 1GiB RAM
         resources:
           requests:
-            memory: 1G
-            cpu: 1
+            memory: "1Gi"
+            cpu: "1"
+
+        # Liveness Probe: Restart Pod if MLLP Connection Fails
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "nc -z europe-simulator.coursework4 8440"
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+        # Readiness Probe: Prevent Traffic if DNS Resolution Fails
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "getent hosts europe-simulator.coursework4"
+          initialDelaySeconds: 5
+          periodSeconds: 10
+
+        # Graceful Shutdown Handling (SIGTERM Handling)
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "echo 'Saving state...'; cp /aki-system/state/state.db /aki-system/state/backup.db; sleep 5"]
+
       initContainers:
       - name: copy-hospital-history
         image: imperialswemlsspring2025.azurecr.io/coursework4-history
@@ -63,8 +116,9 @@ spec:
             name: hospital-history
         resources:
           requests:
-            memory: 1G
-            cpu: 1
+            memory: "500Mi"  # Reduced to avoid scheduling issues
+            cpu: "500m"
+
       volumes:
       - name: hospital-history
         emptyDir:
@@ -72,3 +126,4 @@ spec:
       - name: aki-detection-state
         persistentVolumeClaim:
           claimName: aki-detection-state
+
