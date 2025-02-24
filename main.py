@@ -19,6 +19,7 @@ from src.model import Model
 from src.data_operator import DataOperator
 from src.pager import Pager
 from src.mysql_database import MySQLDatabase
+from src.parser import HL7Parser
 import os
 
 def main():
@@ -32,10 +33,29 @@ def main():
     # ---------------------------------------------------- #
     # initialization stage
     # ---------------------------------------------------- #
-    msg_queue = []#asyncio.Queue()
-    parsed_queue = []#asyncio.Queue()
-    predict_queue = []
-    patient_data = {}
+    # msg_queue = []#asyncio.Queue()
+    # parsed_queue = []#asyncio.Queue()
+    # predict_queue = []
+    # patient_data = {}
+
+    # database = MySQLDatabase(
+    # host=os.getenv("MYSQL_HOST", "db"),
+    # port=os.getenv("MYSQL_PORT", "3306"),
+    # user=os.getenv("MYSQL_USER", "user"),
+    # password=os.getenv("MYSQL_PASSWORD", "password"),
+    # db=os.getenv("MYSQL_DB", "hospital_db")
+    #     )
+    # database.connect()  # Ensure session is created
+
+
+    # # database = MySQLDatabase()
+    # mllp_listener = MllpListener(mllp_address, msg_queue)
+    # #TODO: Does the database get automatically filled when initialised? 
+    # data_operator = DataOperator(msg_queue, predict_queue, database)
+    # model = Model(predict_queue)
+    # initialize in reverse order so everything connects to the next module
+    parser = HL7Parser() 
+    # database = PandasDatabase('data/history.csv')
 
     database = MySQLDatabase(
     host=os.getenv("MYSQL_HOST", "db"),
@@ -44,15 +64,11 @@ def main():
     password=os.getenv("MYSQL_PASSWORD", "password"),
     db=os.getenv("MYSQL_DB", "hospital_db")
         )
-    database.connect()  # Ensure session is created
-
-
-    # database = MySQLDatabase()
-    mllp_listener = MllpListener(mllp_address, msg_queue)
-    #TODO: Does the database get automatically filled when initialised? 
-    data_operator = DataOperator(msg_queue, predict_queue, database)
-    model = Model(predict_queue)
+    database.connect()
     pager = Pager(pager_address)
+    model = Model()
+    data_operator = DataOperator(database, model, pager)
+    mllp_listener = MllpListener(mllp_address, parser, data_operator)
 
     # ---------------------------------------------------- #
     # Running the system (stage)
@@ -60,12 +76,6 @@ def main():
     try:
         while True:
             mllp_listener.run()
-            keep_running = data_operator.run()
-            if keep_running:
-                page_team = model.run()
-                if not (page_team == None):
-                    pager.run(*page_team)
-
             
     except Exception as e:
         print(f"Exception occured:\n{e}")

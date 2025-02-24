@@ -48,14 +48,13 @@ class Model:
     - `le (LabelEncoder)`: Label encoder for categorical features.
     """
 
-    def __init__(self, predict_queue):
+    def __init__(self):
         """
         Initializes the Model class with a queue and loads the pretrained AKI detection model.
         
         Args:
             predict_queue (list): List containing patient records for AKI prediction.
         """
-        self.predict_queue = predict_queue
         self.aki_model = load('aki_detection.joblib')
         self.le = LabelEncoder()
 
@@ -160,12 +159,13 @@ class Model:
         
     def run(self):
         """
+        DEPRECATED
         Executes the prediction process on the next patient in the queue.
         
         Returns:
             tuple: (MRN, test_time) if AKI is detected, otherwise None.
         """
-        (mrn, test_time, patient_vector) = self.predict_queue.pop(0) 
+        (mrn, test_time, patient_vector) = None#self.predict_queue.pop(0) 
         try:
             if self.predict_aki(patient_vector):
                 return (mrn, test_time)
