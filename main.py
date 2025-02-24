@@ -36,18 +36,7 @@ def main():
     parsed_queue = []#asyncio.Queue()
     predict_queue = []
     patient_data = {}
-
-    database = MySQLDatabase(
-    host=os.getenv("MYSQL_HOST", "db"),
-    port=os.getenv("MYSQL_PORT", "3306"),
-    user=os.getenv("MYSQL_USER", "user"),
-    password=os.getenv("MYSQL_PASSWORD", "password"),
-    db=os.getenv("MYSQL_DB", "hospital_db")
-        )
-    database.connect()  # Ensure session is created
-
-
-    # database = MySQLDatabase()
+    database = MySQLDatabase()
     mllp_listener = MllpListener(mllp_address, msg_queue)
     #TODO: Does the database get automatically filled when initialised? 
     data_operator = DataOperator(msg_queue, predict_queue, database)
