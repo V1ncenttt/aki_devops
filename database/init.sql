@@ -11,9 +11,9 @@ CREATE TABLE Patients (
 -- Measurements Table
 CREATE TABLE Measurements (
     mrn VARCHAR(50),
-    measurement_date DATETIME,
-    measurement_value FLOAT,
-    PRIMARY KEY (mrn, measurement_date),
+    creatinine_date DATETIME,
+    creatinine_result FLOAT,
+    PRIMARY KEY (mrn, creatinine_date),
     FOREIGN KEY (mrn) REFERENCES Patients(mrn) ON DELETE CASCADE
 );
 

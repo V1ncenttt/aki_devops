@@ -70,8 +70,14 @@ class DataOperator:
         self.database.add_measurement(mrn, creatinine_value, test_time) 
         
         patient_vector = self.database.get_data(mrn) # Pull all data, including new measurment
-        logging.info('patient_vector', patient_vector)
-    
+        
+        logging.info(f"HERE!!! CHECK WHAT MODEL GETS: {patient_vector.columns.tolist()}")
+        
+        # TODO: Check if this  is ok????
+        # Convert `measurement_date` to UNIX timestamp for XGBoost compatibility
+        if "measurement_date" in patient_vector.columns:
+            patient_vector["measurement_date"] = patient_vector["measurement_date"].astype("int64") // 10**9
+
         
         self.predict_queue.append((mrn, test_time, patient_vector))
 
@@ -92,7 +98,8 @@ class DataOperator:
         mrn = message[1]["mrn"]
         name = message[1]["name"]
         age = message[1]["age"]
-        sex = message[1]['gender']
+        sex = message[1]['sex']
+
 
         self.database.add_patient(mrn, age, sex)
 
@@ -116,6 +123,7 @@ class DataOperator:
         test_time = message[2][0]["test_time"]
 
         logging.info(f"Patient {mrn} has creatinine value {creatinine_value} at {test_time}")
+        
         self.process_patient(mrn, creatinine_value, test_time)
         return True
 
