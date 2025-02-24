@@ -56,7 +56,7 @@ class Database(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def add_measurement(self, mrn, measurement, test_date) -> None:
+    def add_measurement(self, mrn, creatinine_result, creatinine_date) -> None:
         """Adds a creatinine measurement for a patient to the database.
 
         Args:
