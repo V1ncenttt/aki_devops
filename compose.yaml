@@ -16,8 +16,9 @@ services:
       - '3306'
     command: --local-infile=1
     volumes:
-      - my-db:/var/lib/mysql  # Persistent storage for MySQL data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql  # Runs SQL script on first startup
+      - my-db:/var/lib/mysql
+      - ./database/dump.sql:/docker-entrypoint-initdb.d/dump.sql
+
 
     networks:
       - my_network  # Attach db to network
