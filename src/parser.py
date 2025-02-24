@@ -201,9 +201,9 @@ class HL7Parser:
         ):  # Extract additional details only for admissions
             name = fields[5] if len(fields) > 5 else None
             dob = fields[7] if len(fields) > 7 else None
-            sex = fields[8] if len(fields) > 8 else None
+            gender = fields[8] if len(fields) > 8 else None
             age = self.calculate_age(dob) if dob else None
-            self.patient_data.update({"name": name, "age": age, "sex": sex})
+            self.patient_data.update({"name": name, "age": age, "gender": gender})
 
     def _parse_obx(self, fields: list) -> None:
         """

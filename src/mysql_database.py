@@ -2,9 +2,9 @@ from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker, declarative_base #Safer, automatic sanitizing
 from datetime import datetime
-from src.database import Database
+from database import Database
 import pandas as pd
-import logging
+
 
 Base = declarative_base()
 
@@ -17,8 +17,8 @@ class Patient(Base):
 class Measurement(Base):
     __tablename__ = 'Measurements'
     mrn = Column(String(50), ForeignKey('Patients.mrn', ondelete="CASCADE"), primary_key=True)
-    creatinine_date = Column(DateTime, primary_key=True, default=datetime.utcnow)
-    creatinine_result = Column(Float, nullable=False)
+    measurement_date = Column(DateTime, primary_key=True, default=datetime.utcnow)
+    measurement_value = Column(Float, nullable=False)
 
 class MySQLDatabase(Database):
     def __init__(self, host, port, user, password, db):
@@ -30,6 +30,7 @@ class MySQLDatabase(Database):
         except SQLAlchemyError as e:
             print(f"Error initializing database connection: {e}")
     
+        
 
     def connect(self):
         self.session = self.Session()
@@ -41,16 +42,6 @@ class MySQLDatabase(Database):
 
     def add_patient(self, mrn: str, age: int = None, sex: str = None) -> None:
         try:
-            existing_patient = self.session.query(Patient).filter_by(mrn=mrn).first()
-        
-            # TODO: Check if this is ok
-            if existing_patient:
-                #logging.warning(f" DUPLICATE PATIENT FOUND!!!: MRN {mrn}")
-                # logging.warning(f" Existing Patient in DB: Age={existing_patient.age}, Sex={existing_patient.sex}")
-                # logging.warning(f"Incoming Patient Data: Age={age}, Sex={sex}")
-                #logging.warning("This patient will not be added to the database")
-                return
-                
             patient = Patient(mrn=mrn, age=age, sex=sex)
             self.session.add(patient)
             self.session.commit()
@@ -59,27 +50,11 @@ class MySQLDatabase(Database):
             self.session.rollback()
             print(f"Error adding/updating patient: {e}")
 
-    def add_measurement(self, mrn: str, creatinine_result: float, creatinine_date=None) -> None:
+    def add_measurement(self, mrn: str, measurement_value: float, measurement_date=None) -> None:
         try:
-            
-            existing_measurement = (
-            self.session.query(Measurement)
-            .filter_by(mrn=mrn, creatinine_date=creatinine_date)
-            .first()
-            )
-            
-            if existing_measurement:
-                logging.warning(f" DUPLICATE MEASUREMENT FOUND! MRN: {mrn}")
-                logging.warning(f"Existing Measurement: Value={existing_measurement.creatinine_result}, Date={existing_measurement.creatinine_date}")
-                logging.warning(f"Incoming Measurement: Value={creatinine_result}, Date={creatinine_date}")
-                return  # Exit early to prevent duplicate insert
-            
-            
-            
-            creatinine_date = creatinine_date or datetime.now(datetime.zone.utc)  
-            
-            #datetime.utcnow() 
-            measurement_entry = Measurement(mrn=mrn, creatinine_result=creatinine_result, creatinine_date=creatinine_date)
+            measurement_date = measurement_date or datetime.utcnow() #TODO: I think this is the correct way instead of the below
+            # measurement_date = measurement_date or datetime.now(datetime.zone.utc)  
+            measurement_entry = Measurement(mrn=mrn, measurement_value=measurement_value, measurement_date=measurement_date)
             self.session.add(measurement_entry)
             self.session.commit()
             print(f"Measurement for MRN {mrn} on {measurement_date} added/updated.")
@@ -95,7 +70,7 @@ class MySQLDatabase(Database):
             mrn (str): Medical record number (MRN) of the patient.
 
         Returns:
-            DataFrame: DataFrame with columns ['creatinine_date', 'creatinine_result'] sorted by date.
+            DataFrame: DataFrame with columns ['measurement_date', 'measurement_value'] sorted by date.
         """
         
         #NOTE: the return value of this should be a "patient vector" that gets passed to the predict queue with
@@ -107,52 +82,22 @@ class MySQLDatabase(Database):
 
 
         try:
-            # Query both tables to get measurements and  patient info
-            
-            patient_data = self.session.query(Patient.age, Patient.sex).filter_by(mrn=mrn).first()
-            if not patient_data:
-                logging.warning(f"No patient found for MRN {mrn}")
-                return pd.DataFrame()  # empty df if patient doesn't exist (I don't think this should happen)
-            
-            age, sex = patient_data.age, patient_data.sex
-            measurements = (
-            self.session.query(Measurement.creatinine_date, Measurement.creatinine_result)
-            .filter_by(mrn=mrn)
-            .order_by(Measurement.creatinine_date.asc())
-            .all()
+            data = (
+                self.session.query(Measurement.measurement_date, Measurement.measurement_value)
+                .filter_by(mrn=mrn)
+                .order_by(Measurement.measurement_date.asc())
+                .all()
             )
+            df = pd.DataFrame(data, columns=['measurement_date', 'measurement_value'])
 
-            # Convert results to DataFrame
-            # Convert to DataFrame
-            df = pd.DataFrame(measurements, columns=['creatinine_date', 'creatinine_result'])
+            # Ensure measurement_date is in datetime format
+            df['measurement_date'] = pd.to_datetime(df['measurement_date'], errors='coerce')
 
-            # Step 3: Ensure datetime format for processing
-            df['creatinine_date'] = pd.to_datetime(df['creatinine_date'], errors='coerce')
-
-            # Step 4: Convert to Feature Vector (Flatten)
-            flattened_features = {
-                'age': age,
-                'sex': sex,
-            }
-
-            # Convert measurement history to columns like creatinine_date_0, creatinine_result_0, etc.
-            for i, row in df.iterrows():
-                flattened_features[f'creatinine_date_{i}'] = row['creatinine_date']
-                flattened_features[f'creatinine_result_{i}'] = row['creatinine_result']
-
-            # Step 5: Convert to DataFrame (Single Row)
-            feature_df = pd.DataFrame([flattened_features])
-
-            return feature_df
-            
-            
-
-            
+            return df
 
         except SQLAlchemyError as e:
-            logging.error(f"Error retrieving data for MRN {mrn}: {e}")
-            return pd.DataFrame(columns=['creatinine_date', 'creatinine_result', 'age', 'sex'])
-
+            print(f"Error retrieving data: {e}")
+            return pd.DataFrame(columns=['measurement_date', 'measurement_value'])
 
         
         
