@@ -15,6 +15,7 @@ COPY src/pandas_database.py /aki-system/src/
 COPY src/mllp_listener.py /aki-system/src/
 COPY src/data_operator.py /aki-system/src
 COPY src/model.py /aki-system/src/
+COPY src/mysql_database.py /aki-system/src/
 COPY src/pager.py /aki-system/src/
 COPY requirements.txt /aki-system/
 COPY data/history.csv /aki-system/data/

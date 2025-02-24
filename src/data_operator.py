@@ -1,3 +1,4 @@
+import logging
 """
 Data Operator Module
 ====================
@@ -7,7 +8,7 @@ and queues predictions for AKI detection.
 Authors:
 --------
 - Kerim Birgi (kerim.birgi24@imperial.ac.uk)
-- Alsion Lupton (alison.lupton24@imperial.ac.uk)
+- Alison Lupton (alison.lupton24@imperial.ac.uk)
 
 Classes:
 --------
@@ -66,8 +67,19 @@ class DataOperator:
             test_time (str): Timestamp of the test.
         """
         logging.info(f"[WORKER] Processing Patient {mrn} at {test_time}...")
+        
+        # Measurment added first 
+        self.database.add_measurement(mrn, creatinine_value, test_time) 
+        
+        patient_vector = self.database.get_data(mrn) # Pull all data, including new measurment
+        
+        logging.info(f"HERE!!! CHECK WHAT MODEL GETS: {patient_vector.columns.tolist()}")
+        
+        # TODO: Check if this  is ok????
+        # Convert `measurement_date` to UNIX timestamp for XGBoost compatibility
+        if "measurement_date" in patient_vector.columns:
+            patient_vector["measurement_date"] = patient_vector["measurement_date"].astype("int64") // 10**9
 
-        patient_vector = self.database.get_past_measurements(mrn, creatinine_value, test_time)
         
         # if aki-prediction is positive, send a pager alert
         try:
@@ -97,7 +109,8 @@ class DataOperator:
         mrn = message[1]["mrn"]
         name = message[1]["name"]
         age = message[1]["age"]
-        sex = message[1]['gender']
+        sex = message[1]['sex']
+
 
         self.database.add_patient(mrn, age, sex)
 
