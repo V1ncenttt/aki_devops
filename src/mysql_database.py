@@ -160,7 +160,7 @@ class MySQLDatabase(Database):
         
 
 if __name__ == "__main__":
-    db = MySQLDatabase("localhost","3306","root","password","hospital_db")
+    db = MySQLDatabase("localhost","3306","root","passwosrd","hospital_db")
     db.connect()
     print(db.get_data(100005546))
     #TODO: Unit tests
