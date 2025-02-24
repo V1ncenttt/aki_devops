@@ -12,7 +12,7 @@ engine = create_engine(DATABASE_URL)
 with engine.connect() as conn:
     
     #Load df
-    df = pd.read_csv('../data/history.csv')
+    df = pd.read_csv('./data/history.csv')
 
     # Write a pandas DataFrame to MySQL
     # Add code to feed the database

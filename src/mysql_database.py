@@ -1,7 +1,8 @@
 from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, ForeignKey, Enum
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker, declarative_base #Safer, automatic sanitizing
-from datetime import datetime
+from sqlalchemy.dialects.mysql import insert
+from datetime import datetime, timezone
 from src.database import Database
 import pandas as pd
 import logging
@@ -17,7 +18,7 @@ class Patient(Base):
 class Measurement(Base):
     __tablename__ = 'Measurements'
     mrn = Column(String(50), ForeignKey('Patients.mrn', ondelete="CASCADE"), primary_key=True)
-    creatinine_date = Column(DateTime, primary_key=True, default=datetime.utcnow)
+    creatinine_date = Column(DateTime, primary_key=True, default=datetime.now())
     creatinine_result = Column(Float, nullable=False)
 
 class MySQLDatabase(Database):
@@ -27,9 +28,11 @@ class MySQLDatabase(Database):
         try:
             self.engine = create_engine(database_uri, echo=True)
             self.Session = sessionmaker(bind=self.engine)
+            #logging.disable(logging.WARNING)
             print("MySQL database object created.")
         except SQLAlchemyError as e:
             print(f"Error initializing database connection: {e}")
+
     
 
     def connect(self):
@@ -42,19 +45,15 @@ class MySQLDatabase(Database):
 
     def add_patient(self, mrn: str, age: int = None, sex: str = None) -> None:
         try:
-            existing_patient = self.session.query(Patient).filter_by(mrn=mrn).first()
-        
-            # TODO: Check if this is ok
-            if existing_patient:
-                #logging.warning(f" DUPLICATE PATIENT FOUND!!!: MRN {mrn}")
-                # logging.warning(f" Existing Patient in DB: Age={existing_patient.age}, Sex={existing_patient.sex}")
-                # logging.warning(f"Incoming Patient Data: Age={age}, Sex={sex}")
-                #logging.warning("This patient will not be added to the database")
-                return
-                
-            patient = Patient(mrn=mrn, age=age, sex=sex)
-            self.session.add(patient)
+            #existing_patient = self.session.query(Patient).filter_by(mrn=mrn).first()
+            stmt = insert(Patient).values(mrn=mrn, age=age, sex=sex)
+            stmt = stmt.on_duplicate_key_update(
+                age=stmt.inserted.age, 
+                sex=stmt.inserted.sex
+            )
+            self.session.execute(stmt)
             self.session.commit()
+
             print(f"Added patient with MRN {mrn}.")
         except SQLAlchemyError as e:
             self.session.rollback()
@@ -62,27 +61,15 @@ class MySQLDatabase(Database):
 
     def add_measurement(self, mrn: str, creatinine_result: float, creatinine_date=None) -> None:
         try:
-            
-            existing_measurement = (
-            self.session.query(Measurement)
-            .filter_by(mrn=mrn, creatinine_date=creatinine_date)
-            .first()
+            creatinine_date = creatinine_date or datetime.now(timezone.utc)
+            stmt = insert(Measurement).values(
+                mrn=mrn, creatinine_result=creatinine_result, creatinine_date=creatinine_date
             )
+            stmt = stmt.on_duplicate_key_update(creatinine_result=stmt.inserted.creatinine_result)
             
-            if existing_measurement:
-                logging.warning(f" DUPLICATE MEASUREMENT FOUND! MRN: {mrn}")
-                logging.warning(f"Existing Measurement: Value={existing_measurement.creatinine_result}, Date={existing_measurement.creatinine_date}")
-                logging.warning(f"Incoming Measurement: Value={creatinine_result}, Date={creatinine_date}")
-                return  # Exit early to prevent duplicate insert
-            
-            
-            
-            creatinine_date = creatinine_date or datetime.now(datetime.zone.utc)  
-            
-            #datetime.utcnow() 
-            measurement_entry = Measurement(mrn=mrn, creatinine_result=creatinine_result, creatinine_date=creatinine_date)
-            self.session.add(measurement_entry)
+            self.session.execute(stmt)
             self.session.commit()
+
             print(f"Added measurement for MRN {mrn}.")
         except SQLAlchemyError as e:
             self.session.rollback()
@@ -122,7 +109,7 @@ class MySQLDatabase(Database):
             .order_by(Measurement.creatinine_date.asc())
             .all()
             )
-
+        
             # Convert results to DataFrame
             # Convert to DataFrame
             df = pd.DataFrame(measurements, columns=['creatinine_date', 'creatinine_result'])
@@ -160,8 +147,20 @@ class MySQLDatabase(Database):
         
 
 if __name__ == "__main__":
-    db = MySQLDatabase("localhost","3306","root","passwosrd","hospital_db")
+    db = MySQLDatabase("localhost","3306","root","password","hospital_db")
     db.connect()
-    print(db.get_data(100005546))
+    #print(db.get_data(100005546))
     #TODO: Unit tests
+    db.add_patient('12345', 22, 'M')
+    
+    db.get_data('12345')
+    db.add_patient('12345', 23, 'M')
+    db.get_data('12345')
+
+    #Test measurements
+    sample_datetime = datetime.now()
+    db.add_measurement('12345', 1.1, sample_datetime)
+    db.get_data('12345')
+    db.add_measurement('12345', 1.2, sample_datetime)
+    db.get_data('12345')
 
