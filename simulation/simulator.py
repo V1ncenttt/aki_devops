@@ -8,6 +8,7 @@ import socket
 import threading
 import time
 import csv
+import os
 
 VERSION = "0.0.6"
 MLLP_BUFFER_SIZE = 1024
@@ -128,17 +129,22 @@ def write_page(mrn, timestamp=None):
     received_pages.append((mrn,timestamp))
     return
 
-def write_pages_to_file():
-    with open(file="predictions.csv", mode="w", newline='') as f:
+def write_pages_to_file(received_pages):
+    file_path = "/var/log/simulation.log/predictions.csv"
+    dir_path = os.path.dirname(file_path)
+    os.makedirs(dir_path, exist_ok=True)
+
+    with open(file=file_path, mode="w", newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['mrn', 'date'])
         writer.writerows(received_pages)
+    return
 
 
 class PagerRequestHandler(http.server.BaseHTTPRequestHandler):
 
     def __init__(self, shutdown, *args, **kwargs):
-        print("Creating new PagerRequestHandler")
+        #print("Creating new PagerRequestHandler")
         self.shutdown = shutdown
         self.received_pages = []
         super().__init__(*args, **kwargs)
@@ -197,6 +203,7 @@ class PagerRequestHandler(http.server.BaseHTTPRequestHandler):
             print(f"pager: paging for MRN {mrn}")
             write_page(mrn)
         print(f"")
+        write_pages_to_file(received_pages) # add it after everything for now and then fix later
         self.send_response(http.HTTPStatus.OK)
         self.send_header("Content-Type", "text/plain")
         self.end_headers()
@@ -219,8 +226,46 @@ class PagerRequestHandler(http.server.BaseHTTPRequestHandler):
         pass # Prevent default logging
 
 
-def evaluate(predictions_filepath="predictions.csv", truths_filepath="aki.csv"):
-    print("Evalution not implemented yet...")
+def evaluate(predictions_filepath="simulation/predictions.csv", gt_filepath="simulation/aki.csv"):
+    import pandas as pd
+    #predictions = None
+    #with open(predictions_filepath, mode='r', newline='') as f:
+    #    reader = csv.reader(f)
+    #    predictions = list(reader)
+    #
+    #gt = None
+    #with open(gt_filepath, mode='r', newline='') as f:
+    #    reader = csv.reader(f)
+    #    gt = list(reader)
+    
+    #preds_df = pd.DataFrame(predictions[1:], columns=predictions[:1])
+    #gt_df = pd.DataFrame(gt[1:], columns=gt[:1])
+
+    predictions = pd.read_csv(predictions_filepath)
+    ground_truth = pd.read_csv(gt_filepath)
+    
+    #correct_preds = pd.merge(predictions, ground_truth, how='inner', on=['mrn', 'date'])
+
+    # Accuracy = (TP + TN) / (TP + TN + FP + FN)
+    # we are not really measuring accuracy but measuring: TP / (TP+FP)
+    #accuracy = len(correct_preds) / len(ground_truth)
+
+    true_positives = pd.merge(predictions, ground_truth, on=['mrn', 'date'], how='inner')
+    tp = len(true_positives)
+    
+    # Calculate precision and recall
+    precision = tp / len(predictions) if len(predictions) > 0 else 0
+    recall = tp / len(ground_truth) if len(ground_truth) > 0 else 0
+
+    # F3 score calculation (beta = 3)
+    beta = 3
+    if (beta**2 * precision + recall) == 0:
+        f3 = 0.0
+    else:
+        f3 = (1 + beta**2) * (precision * recall) / (beta**2 * precision + recall)
+    
+    return round(f3, 4)
+    
 
 
 def main():
@@ -246,14 +291,8 @@ def main():
     print(f"pager: listening on 0.0.0.0:{flags.pager}")
     pager_thread = threading.Thread(target=pager.serve_forever, args=(), kwargs={"poll_interval": SHUTDOWN_POLL_INTERVAL_SECONDS}, daemon=True)
     pager_thread.start()
-    try:
-        mllp_thread.join()
-        pager_thread.join()
-    except Exception as e:
-        # write the pages
-        print("Writing received pages...")
-        write_pages_to_file(received_pages)
-        return
+    mllp_thread.join()
+    pager_thread.join()
     # write the pages
     print("Writing received pages...")
     write_pages_to_file(received_pages)
@@ -262,4 +301,6 @@ def main():
     evaluate("predictions.csv", "aki.csv")
 
 if __name__ == "__main__":
-    main()
+    f3 = evaluate()
+    print(f"f3: {f3}")
+    #main()
