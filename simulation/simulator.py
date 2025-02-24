@@ -7,6 +7,7 @@ import signal
 import socket
 import threading
 import time
+import csv
 
 VERSION = "0.0.6"
 MLLP_BUFFER_SIZE = 1024
@@ -122,10 +123,24 @@ def read_hl7_messages(filename):
                 raise Exception(f"{filename}: Unexpected data at end of file")
         return messages
 
+received_pages=[]
+def write_page(mrn, timestamp=None):
+    received_pages.append((mrn,timestamp))
+    return
+
+def write_pages_to_file():
+    with open(file="predictions.csv", mode="w", newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['mrn', 'date'])
+        writer.writerows(received_pages)
+
+
 class PagerRequestHandler(http.server.BaseHTTPRequestHandler):
 
     def __init__(self, shutdown, *args, **kwargs):
+        print("Creating new PagerRequestHandler")
         self.shutdown = shutdown
+        self.received_pages = []
         super().__init__(*args, **kwargs)
 
     def do_POST(self):
@@ -177,8 +192,11 @@ class PagerRequestHandler(http.server.BaseHTTPRequestHandler):
                 return
         if timestamp:
             print(f"pager: paging for MRN {mrn} at {timestamp}")
+            write_page(mrn, timestamp)
         else:
             print(f"pager: paging for MRN {mrn}")
+            write_page(mrn)
+        print(f"")
         self.send_response(http.HTTPStatus.OK)
         self.send_header("Content-Type", "text/plain")
         self.end_headers()
@@ -199,6 +217,11 @@ class PagerRequestHandler(http.server.BaseHTTPRequestHandler):
 
     def log_message(*args):
         pass # Prevent default logging
+
+
+def evaluate(predictions_filepath="predictions.csv", truths_filepath="aki.csv"):
+    print("Evalution not implemented yet...")
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -223,8 +246,20 @@ def main():
     print(f"pager: listening on 0.0.0.0:{flags.pager}")
     pager_thread = threading.Thread(target=pager.serve_forever, args=(), kwargs={"poll_interval": SHUTDOWN_POLL_INTERVAL_SECONDS}, daemon=True)
     pager_thread.start()
-    mllp_thread.join()
-    pager_thread.join()
+    try:
+        mllp_thread.join()
+        pager_thread.join()
+    except Exception as e:
+        # write the pages
+        print("Writing received pages...")
+        write_pages_to_file(received_pages)
+        return
+    # write the pages
+    print("Writing received pages...")
+    write_pages_to_file(received_pages)
+
+    print("Running evaluation of predictions vs ground truths...")
+    evaluate("predictions.csv", "aki.csv")
 
 if __name__ == "__main__":
     main()
