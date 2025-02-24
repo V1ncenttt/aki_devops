@@ -36,7 +36,7 @@ class TestDataOperator(unittest.TestCase):
         
     def test_process_adt_message(self):
         """Test processing an ADT message."""
-        message = ("ADT^A01", {"mrn": 123, "name": "John Doe", "age": 45, "gender": "M"})
+        message = ("ADT^A01", {"mrn": 123, "name": "John Doe", "age": 45, "sex": "M"})
         result = self.operator.process_adt_message(message)
         
         # Assertions
