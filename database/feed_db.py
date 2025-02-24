@@ -38,6 +38,6 @@ with engine.connect() as conn:
             result = row[f'creatinine_result_{i}']
             if not date is None and not result is None and not pd.isna(date) and not pd.isna(result):
                 
-                query = f"INSERT INTO Measurements (mrn, measurement_date, measurement_value) VALUES ({mrn}, '{date}', {result})" # might need to make sure that the date is in the correct format
+                query = f"INSERT INTO Measurements (mrn, creatinine_date, creatinine_result) VALUES ({mrn}, '{date}', {result})" # might need to make sure that the date is in the correct format
                 conn.execute(sqlalchemy.text(query))
                 conn.commit()
