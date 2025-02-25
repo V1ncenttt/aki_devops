@@ -152,7 +152,6 @@ class Model:
             int: 1 if AKI is detected, 0 otherwise.
         """
         x = self.preprocess(measurement_vector)
-        logging.info(f"HERE IS RIGHT BEFORE IT GOES TO PREDICTION: {x}")
         y = self.aki_model.predict(x)
         logging.info(f"Prediction: {y}")
         return y

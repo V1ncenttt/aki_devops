@@ -72,9 +72,7 @@ class DataOperator:
         self.database.add_measurement(mrn, creatinine_value, test_time) 
         
         patient_vector = self.database.get_data(mrn) # Pull all data, including new measurment
-        
-        logging.info(f"HERE!!! CHECK WHAT MODEL GETS: {patient_vector.columns.tolist()}")
-        
+                
         # TODO: Check if this  is ok????
         # Convert `measurement_date` to UNIX timestamp for XGBoost compatibility
         if "measurement_date" in patient_vector.columns:
