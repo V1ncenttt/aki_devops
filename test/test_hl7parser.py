@@ -48,7 +48,7 @@ class TestHL7Parser(unittest.TestCase):
         self.assertEqual(patient_data["mrn"], 123456)
         self.assertEqual(patient_data["name"], "Doe^John")
         self.assertEqual(patient_data["age"], datetime.today().year - 1990)
-        self.assertEqual(patient_data["gender"], "M")
+        self.assertEqual(patient_data["sex"], "M")
 
     def test_parse_adt_a03(self):
         """Test parsing an ADT^A03 (discharge) message."""

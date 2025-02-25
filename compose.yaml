@@ -1,4 +1,29 @@
+version: '3.8'
+
 services:
+  db:
+    container_name: db
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'hospital_db'
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: 'password'
+      MYSQL_ROOT_PASSWORD: 'password'
+    ports:
+      - '3306:3306'  # Consider removing if not needed externally
+    command: --local-infile=1
+    volumes:
+      - my-db:/var/lib/mysql
+      - ./database/dump.sql:/docker-entrypoint-initdb.d/dump.sql
+    networks:
+      - my_network  
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   message-simulator:
     build:
       context: ./simulation
@@ -7,14 +32,15 @@ services:
     networks:
       - my_network
     depends_on:
-      - aki-system
+      aki-system:
+        condition: service_started
     ports:
       - "8440:8440"
       - "8441:8441"
     logging:
       driver: "local"
     volumes:
-      - ./logs/simulation.log:/var/log/simulation.log
+      - ./logs:/var/log
 
   aki-system:
     build:
@@ -23,10 +49,16 @@ services:
     container_name: aki-system
     networks:
       - my_network
+    depends_on:
+      db:
+        condition: service_healthy  # Ensure db is ready before aki-system starts
     logging:
       driver: "local"
     volumes:
-      - ./logs/aki-system.log:/var/log/aki-system.log
+      - ./logs:/var/log
+
+volumes:
+  my-db:
 
 networks:
   my_network:
