@@ -13,6 +13,7 @@ Run this script to start the system:
 
 import os
 import time
+import logging
 from prometheus_client import start_http_server
 from src.metrics import HL7_MESSAGES_RECEIVED, AKI_PAGES_SENT, AKI_PAGES_FAILED, PREDICTIONS_MADE, SYSTEM_UPTIME
 from src.pandas_database import PandasDatabase
@@ -22,6 +23,7 @@ from src.data_operator import DataOperator
 from src.pager import Pager
 from src.mysql_database import MySQLDatabase
 from src.parser import HL7Parser
+
 
 def main():
     """
