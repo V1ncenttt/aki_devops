@@ -128,8 +128,6 @@ class MllpListener:
 
                     parsed_message = self.parser.parse(hl7_message)
                     
-                    # if we have it before the next if block we are also counting invalid messages, idk man
-                    HL7_MESSAGES_RECEIVED.inc()
                     
                     if parsed_message is None or parsed_message[0] is None:
                         logging.error("Received invalid HL7 message or unknown message type:")
@@ -138,8 +136,10 @@ class MllpListener:
                         # return back to main.py without sending an ACK
                         # TODO: introduce some safety mechanism here
                         return
-                    
 
+                    # Moved here to avoid counting invalid messages as received
+                    HL7_MESSAGES_RECEIVED.inc()
+                    
 
 
                     # Invariant: message is parsed correctly
