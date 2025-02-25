@@ -130,7 +130,7 @@ def write_page(mrn, timestamp=None):
     return
 
 def write_pages_to_file(received_pages):
-    file_path = "/var/log/simulation.log/predictions.csv"
+    file_path = "/var/log/predictions.csv"
     dir_path = os.path.dirname(file_path)
     os.makedirs(dir_path, exist_ok=True)
 
@@ -138,7 +138,7 @@ def write_pages_to_file(received_pages):
         writer = csv.writer(f)
         writer.writerow(['mrn', 'date'])
         writer.writerows(received_pages)
-    return
+    return   
 
 
 class PagerRequestHandler(http.server.BaseHTTPRequestHandler):
@@ -226,7 +226,7 @@ class PagerRequestHandler(http.server.BaseHTTPRequestHandler):
         pass # Prevent default logging
 
 
-def evaluate(predictions_filepath="logs/simulation.log/predictions.csv", gt_filepath="simulation/aki.csv"):
+def evaluate(predictions_filepath="logs/predictions.csv", gt_filepath="simulation/aki.csv"):
     import pandas as pd
     #predictions = None
     #with open(predictions_filepath, mode='r', newline='') as f:
@@ -264,8 +264,7 @@ def evaluate(predictions_filepath="logs/simulation.log/predictions.csv", gt_file
     else:
         f3 = (1 + beta**2) * (precision * recall) / (beta**2 * precision + recall)
     
-    return round(f3, 4)
-    
+    return round(f3, 4) 
 
 
 def main():
