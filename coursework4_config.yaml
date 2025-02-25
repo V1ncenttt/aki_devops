@@ -41,7 +41,7 @@ spec:
         - name: MLLP_ADDRESS
           value: europe-simulator.coursework4:8440
         - name: PAGER_ADDRESS
-          value: europe-simulator.coursework4:8440
+          value: europe-simulator.coursework4:8441
         ports:
         - name: http
           containerPort: 8000
