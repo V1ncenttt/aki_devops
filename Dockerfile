@@ -11,6 +11,7 @@ RUN /aki-system/bin/pip3 install -r /aki-system/requirements.txt
 COPY main.py /aki-system/
 COPY src/database.py /aki-system/src/
 COPY src/parser.py /aki-system/src/
+COPY src/metrics.py /aki-system/src/
 COPY src/pandas_database.py /aki-system/src/
 COPY src/mllp_listener.py /aki-system/src/
 COPY src/data_operator.py /aki-system/src
