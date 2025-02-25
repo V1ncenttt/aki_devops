@@ -78,14 +78,14 @@ def main():
     # ---------------------------------------------------- #
     # Running the system
     # ---------------------------------------------------- #
-    try:
-        #while True: CHECK IF OKAY
-        mllp_listener.run()
-
-
-    except Exception as e:
-        print(f"Exception occurred:\n{e}")
-        print("Process interrupted")
+    while True:
+        try:
+            logging.info("[*] Starting MLLP listener...")
+            mllp_listener.run()
+        except Exception as e:
+            logging.error(f"[ERROR] Exception occurred in MLLP listener: {e}")
+            logging.info("[*] Restarting MLLP listener in 5 seconds...")
+            time.sleep(5)  # Wait before restarting
 
     # ---------------------------------------------------- #
     # Shutdown stage
