@@ -27,7 +27,7 @@ import logging
 from src.database import Database
 from src.model import Model
 from src.pager import Pager
-from src.metrics import BLOOD_TEST_RESULTS_RECEIVED, PREDICTIONS_MADE, POSITIVE_PREDICTIONS_MADE
+from src.metrics import BLOOD_TEST_RESULTS_RECEIVED, PREDICTIONS_MADE, POSITIVE_PREDICTIONS_MADE, PREDICTIONS_FAILED, ADMITTED_PATIENT_MESSAGES, DISCHARGED_PATIENT_MESSAGES
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -84,7 +84,7 @@ class DataOperator:
             PREDICTIONS_MADE.inc()
         except Exception as e:
             logging.error(f"Error from model.py\nException:\n{e}")
-            aki_predictions_failed.inc()  # Track failed predictions
+            PREDICTIONS_FAILED.inc()  # Track failed predictions
             return False
         
         if positive_prediction:
@@ -113,7 +113,6 @@ class DataOperator:
         self.database.add_patient(mrn, age, sex)
         logging.info(f"Patient {name} with MRN {mrn} added to the database")
 
-        patients_added.inc()  # Track new patients added
         return True
 
     def process_oru_message(self, message):
@@ -145,14 +144,15 @@ class DataOperator:
         Returns:
             bool: True if a prediction was made, False otherwise.
         """
-        hl7_messages_processed.inc()  # Track each HL7 message processed
 
         if message[0] == "ORU^R01":
             BLOOD_TEST_RESULTS_RECEIVED.inc()
             status = self.process_oru_message(message) 
         elif message[0] == "ADT^A01":
+            ADMITTED_PATIENT_MESSAGES.inc()
             status = self.process_adt_message(message) 
         elif message[0] == "ADT^A03":
+            DISCHARGED_PATIENT_MESSAGES.inc()
             status = True  # Placeholder, can be modified if needed
         else:
             logging.error(f"Unknown Message type {message}")
