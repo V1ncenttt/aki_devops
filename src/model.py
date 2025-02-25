@@ -153,7 +153,7 @@ class Model:
         """
         x = self.preprocess(measurement_vector)
         y = self.aki_model.predict(x)
-        logging.info(f"Prediction: {y}")
+        logging.info(f"model.py: Prediction: {y}")
         return y
         
     def run(self):
@@ -172,7 +172,7 @@ class Model:
                 return None
         except Exception as e: #TODO: Catch the right exception
             print("Error in model.py")
-            logging.info(f"Exception: {e}")
+            logging.info(f"model.py: Exception: {e}")
             exit()
 
 if __name__=="__main__":

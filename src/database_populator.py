@@ -15,25 +15,25 @@ class DatabasePopulator:
         self.db = db
         self.history_file = history_file
         self.database_uri = f"mysql+pymysql://{user}:{password}@{host}:{port}/{db}"
-        logging.info(f"Database URI: {self.database_uri}")
+        logging.info(f"database_populator.py: Database URI: {self.database_uri}")
         try:
             self.engine = create_engine(self.database_uri, echo=False)
             self.Session = sessionmaker(bind=self.engine)
-            logging.info("MySQL database connection established.")
+            logging.info("database_populator.py: MySQL database connection established.")
         except SQLAlchemyError as e:
-            logging.error(f"Error initializing database connection: {e}")
+            logging.error(f"database_populator.py: Error initializing database connection: {e}")
 
     def populate(self):
         """Populate the database with patient and measurement data."""
         if not self.db_has_tables():
-            logging.warning("Database has no tables, please create tables first.")
+            logging.warning("database_populator.py: Database has no tables, please create tables first.")
             return
         if self.db_has_tables() and not self.db_is_populated():
-            logging.info("Database is empty, populating with history data.")
+            logging.info("database_populator.py: Database is empty, populating with history data.")
             self.add_history_to_db()
-            logging.info("Database populated successfully.")
+            logging.info("database_populator.py: Database populated successfully.")
         else:
-            logging.info("Everything is already OK with the database, no need to populate.")
+            logging.info("database_populator.py: Everything is already OK with the database, no need to populate.")
         
     def add_history_to_db(self):
         """
@@ -66,7 +66,7 @@ class DatabasePopulator:
                     try:
                         parsed_date = datetime.strptime(date, "%Y-%m-%d %H:%M:%S")  # Adjust format if needed
                     except ValueError:
-                        logging.warning(f"Invalid date format for MRN {mrn}: {date}")
+                        logging.warning(f"database_populator.py: Invalid date format for MRN {mrn}: {date}")
                         continue
 
                     # Insert measurement
@@ -79,7 +79,7 @@ class DatabasePopulator:
 
         except SQLAlchemyError as e:
             session.rollback()
-            logging.error(f"Error adding history: {e}")
+            logging.error(f"database_populator.py: Error adding history: {e}")
         finally:
             session.close()
 
@@ -90,13 +90,13 @@ class DatabasePopulator:
             result = session.execute(text("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = :db"), {"db": self.db})
             table_count = result.scalar()
             if table_count and table_count > 0:
-                logging.info(f"Database contains {table_count} tables.")
+                logging.info(f"database_populator.py: Database contains {table_count} tables.")
                 return True
             else:
-                logging.warning("Database has no tables.")
+                logging.warning("database_populator.py: Database has no tables.")
                 return False
         except SQLAlchemyError as e:
-            logging.error(f"Error checking tables: {e}")
+            logging.error(f"database_populator.py: Error checking tables: {e}")
             return False
         finally:
             session.close()
@@ -108,21 +108,21 @@ class DatabasePopulator:
             result = session.execute(text("SELECT table_name FROM information_schema.tables WHERE table_schema = :db"), {"db": self.db})
             tables = [row[0] for row in result]
             if not tables:
-                logging.warning("Database has no tables.")
+                logging.warning("database_populator.py: Database has no tables.")
                 return False
 
             for table in tables:
                 count_result = session.execute(text(f"SELECT COUNT(*) FROM `{table}`"))
                 row_count = count_result.scalar()
                 if row_count and row_count > 0:
-                    logging.info(f"Database is populated (Table `{table}` has {row_count} rows).")
+                    logging.info(f"database_populator.py: Database is populated (Table `{table}` has {row_count} rows).")
                     return True
 
-            logging.warning("Database has tables but no data.")
+            logging.warning("database_populator.py: Database has tables but no data.")
             return False
 
         except SQLAlchemyError as e:
-            logging.error(f"Error checking if database is populated: {e}")
+            logging.error(f"database_populator.py: Error checking if database is populated: {e}")
             return False
         finally:
             session.close()

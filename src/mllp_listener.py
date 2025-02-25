@@ -21,13 +21,14 @@ Example:
 """
 
 import os
+import csv
 import logging
 import socket
 import time
 import signal
 from src.parser import HL7Parser, START_BLOCK, END_BLOCK
 from src.data_operator import DataOperator
-from src.metrics import HL7_MESSAGES_RECEIVED, INCORRECT_MESSAGES_RECEIVED, MLLP_RECONNECTIONS, MLLP_SHUTDOWNS
+from src.metrics import HL7_MESSAGES_RECEIVED, INCORRECT_MESSAGES_RECEIVED, MLLP_RECONNECTIONS, MLLP_SHUTDOWNS, FAILED_MESSAGES, PARSED_MESSAGES
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -73,15 +74,15 @@ class MllpListener:
                 mllp_host, mllp_port = self.mllp_address.split(":")
                 mllp_port = int(mllp_port)
                 
-                logging.info(f"[*] Connecting to HL7 Simulator at {mllp_host}:{mllp_port}...")
+                logging.info(f"mllp_listener.py: [*] Connecting to HL7 Simulator at {mllp_host}:{mllp_port}...")
                 self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.client_socket.settimeout(10)
                 self.client_socket.connect((mllp_host, mllp_port))
                 
-                logging.info("[+] Connected to HL7 Simulator!")
+                logging.info("mllp_listener.py: [+] Connected to HL7 Simulator!")
                 return
             except (ConnectionRefusedError, ConnectionResetError):
-                logging.error(f"[-] Could not connect to {mllp_host}:{mllp_port}, retrying in 5s...")
+                logging.error(f"mllp_listener.py: [-] Could not connect to {mllp_host}:{mllp_port}, retrying in 5s...")
                 time.sleep(5)
 
     def shutdown(self):
@@ -93,7 +94,7 @@ class MllpListener:
             self.client_socket.close()
         
         MLLP_SHUTDOWNS.inc()  # Track shutdowns
-        logging.info(f"[*] Shutting down MLLP Listener. Total shutdowns: {MLLP_SHUTDOWNS._value.get()}")
+        logging.info(f"mllp_listener.py: [*] Shutting down MLLP Listener. Total shutdowns: {MLLP_SHUTDOWNS._value.get()}")
         self.running = False
         exit()
 
@@ -107,9 +108,9 @@ class MllpListener:
         try:
             ack_message = self.parser.generate_hl7_ack(hl7_message)
             self.client_socket.sendall(ack_message)
-            logging.info("[ACK SENT]")
+            logging.info("mllp_listener.py: [ACK SENT]")
         except Exception as e:
-            logging.error(f"Failed to send ACK: {e}")
+            logging.error(f"mllp_listener.py: Failed to send ACK: {e}")
 
     def run(self):
         """
@@ -122,7 +123,7 @@ class MllpListener:
                 try:
                     data = self.client_socket.recv(1024)
                     if not data:
-                        logging.info("[-] No more data, closing connection.")
+                        logging.info("mllp_listener.py: [-] No more data, closing connection.")
                         self.shutdown()
                         return
 
@@ -137,11 +138,12 @@ class MllpListener:
                         parsed_message = self.parser.parse(hl7_message)
 
                         if parsed_message is None or parsed_message[0] is None:
-                            logging.error("Received invalid HL7 message or unknown message type.")
+                            logging.error("mllp_listener.py: Received invalid HL7 message or unknown message type.")
                             INCORRECT_MESSAGES_RECEIVED.inc()
                             return
 
                         HL7_MESSAGES_RECEIVED.inc()
+                        PARSED_MESSAGES.append(hl7_message)
 
                         try:
                             status = self.data_operator.process_message(parsed_message)
@@ -149,25 +151,34 @@ class MllpListener:
                             if status:
                                 self.send_ack(hl7_message)
                             else:
-                                logging.error(f"Error processing message:\n{hl7_message}")
+                                logging.error(f"mllp_listener.py: Error processing message:\n{hl7_message}")
+                                FAILED_MESSAGES.append(hl7_message)
+                            
+                            # keep these in for now, see how to read from kubernetes then change accordingly
+                            if True:
+                                parsed_writer = csv.writer('/aki-system/state/parsed_messages.csv')
+                                parsed_writer.writerows(PARSED_MESSAGES)
+                                failed_writer = csv.writer('/aki-system/state/failed_messages.csv')
+                                failed_writer.writerows(FAILED_MESSAGES)
+
                             return
 
                         except Exception as e:
-                            logging.error(f"Data Operator error: {e}")
+                            logging.error(f"mllp_listener.py: Data Operator error: {e}")
                             return
 
                 except socket.timeout:
-                    logging.warning("[-] Read timeout. Closing connection.")
+                    logging.warning("mllp_listener.py: [-] Read timeout. Closing connection.")
                     self.shutdown()
                     return
 
         except KeyboardInterrupt:
-            logging.info("[*] Keyboard interrupt detected. Shutting down gracefully...")
+            logging.info("mllp_listener.py: [*] Keyboard interrupt detected. Shutting down gracefully...")
             self.shutdown()
 
 # Handle termination signals for graceful shutdown
 def handle_shutdown_signal(signum, frame):
-    logging.info(f"[*] Received shutdown signal ({signum}). Shutting down...")
+    logging.info(f"mllp_listener.py: [*] Received shutdown signal ({signum}). Shutting down...")
     listener.shutdown()
 
 signal.signal(signal.SIGINT, handle_shutdown_signal)  # Handle Ctrl+C

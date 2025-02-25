@@ -17,3 +17,7 @@ MLLP_SHUTDOWNS = Counter('mllp_shutdowns_total', 'Total number of MLLP listener 
 
 # This metric can keep track of percentiles
 BLOOD_TEST_RESULT_SUMMARY = Summary('blood_test_result_summary','Summary of blood test result values (creatinine levels)')
+
+# storage for not fully processed messages:
+PARSED_MESSAGES = []
+FAILED_MESSAGES = []

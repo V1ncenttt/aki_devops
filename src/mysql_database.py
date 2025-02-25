@@ -94,9 +94,9 @@ class MySQLDatabase(Database):
             self.engine = create_engine(database_uri, echo=False)
             self.Session = sessionmaker(bind=self.engine)
             #logging.disable(logging.WARNING)
-            print("MySQL database object created.")
+            logging.info("mysql_database.py: MySQL database object created.")
         except SQLAlchemyError as e:
-            print(f"Error initializing database connection: {e}")
+            logging.error(f"mysql_database.py: Error initializing database connection: {e}")
 
 
 
@@ -105,14 +105,14 @@ class MySQLDatabase(Database):
         Opens a new session with the database.
         """
         self.session = self.Session()
-        print("Connected to MySQL database.")
+        logging.info("mysql_database.py: Connected to MySQL database.")
 
     def disconnect(self):
         """
         Closes the current session with the database.
         """
         self.session.close()
-        print("Disconnected from MySQL database.")
+        logging.info("mysql_database.py: Disconnected from MySQL database.")
 
     def add_patient(self, mrn: str, age: int = None, sex: str = None) -> None:
         """
@@ -133,10 +133,10 @@ class MySQLDatabase(Database):
             self.session.execute(stmt)
             self.session.commit()
 
-            print(f"Added patient with MRN {mrn}.")
+            logging.info(f"mysql_database.py: Added patient with MRN {mrn}.")
         except SQLAlchemyError as e:
             self.session.rollback()
-            print(f"Error adding patient: {e}")
+            logging.error(f"mysql_database.py: Error adding patient: {e}")
 
     def add_measurement(self, mrn: str, creatinine_result: float, creatinine_date=None) -> None:
         """
@@ -157,10 +157,10 @@ class MySQLDatabase(Database):
             self.session.execute(stmt)
             self.session.commit()
 
-            print(f"Added measurement for MRN {mrn}.")
+            logging.info(f"mysql_database.py: Added measurement for MRN {mrn}.")
         except SQLAlchemyError as e:
             self.session.rollback()
-            print(f"Error adding measurement: {e}")
+            logging.error(f"mysql_database.py: Error adding measurement: {e}")
 
     def get_data(self, mrn: str):
         """
@@ -186,8 +186,8 @@ class MySQLDatabase(Database):
 
             patient_data = self.session.query(Patient.age, Patient.sex).filter_by(mrn=mrn).first()
             if not patient_data:
-                logging.warning(f"No patient found for MRN {mrn}")
-                return pd.DataFrame()  # empty df if patient doesn't exist (I don't think this should happen)
+                logging.warning(f"mysql_database.py: No patient found for MRN {mrn}")
+                return None  # empty df if patient doesn't exist (I don't think this should happen)
 
             age, sex = patient_data.age, patient_data.sex
             measurements = (

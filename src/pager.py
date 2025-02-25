@@ -60,7 +60,7 @@ class Pager:
         """
         timestamp = timestamp.replace("-", "").replace(" ", "").replace(":", "").replace('T', '').split('.')[0]
 
-        logging.info(f"[*] Sending pager alert for Patient {mrn} at {timestamp}...")
+        logging.info(f"pager.py: [*] Sending pager alert for Patient {mrn} at {timestamp}...")
 
         content = f"{mrn},{timestamp}"
 
@@ -78,7 +78,7 @@ class Pager:
 
             except requests.RequestException as e:
                 AKI_PAGES_FAILED.inc()  # Track failures caused by exceptions (timeouts, connection errors, etc.)
-                logging.warning(f"[ALERT FAILED] Retrying... {e}")
+                logging.warning(f"pager.py: [ALERT FAILED] Retrying... {e}")
                 time.sleep(1)  # Wait before retrying
 
         return
