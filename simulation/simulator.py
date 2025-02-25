@@ -226,7 +226,7 @@ class PagerRequestHandler(http.server.BaseHTTPRequestHandler):
         pass # Prevent default logging
 
 
-def evaluate(predictions_filepath="simulation/predictions.csv", gt_filepath="simulation/aki.csv"):
+def evaluate(predictions_filepath="logs/simulation.log/predictions.csv", gt_filepath="simulation/aki.csv"):
     import pandas as pd
     #predictions = None
     #with open(predictions_filepath, mode='r', newline='') as f:
@@ -274,7 +274,15 @@ def main():
     parser.add_argument("--mllp", default=8440, type=int, help="Port on which to replay HL7 messages via MLLP")
     parser.add_argument("--pager", default=8441, type=int, help="Post on which to listen for pager requests via HTTP")
     parser.add_argument("--short_messages", default=False, action="store_true", help="Encourage all outgoing messages to be split in two")
+    parser.add_argument("--test_f3", default=False, action="store_true", help="if set to true this program only tests the last prediction and compares it with ground truth, then prints the f3 score.")
     flags = parser.parse_args()
+
+    # for testing
+    if flags.test_f3:
+        f3 = evaluate()
+        print(f"f3: {f3}")
+        return
+    
     hl7_messages = read_hl7_messages(flags.messages)
     shutdown_event = threading.Event()
     mllp_thread = threading.Thread(target=run_mllp_server, args=("0.0.0.0", flags.mllp, hl7_messages, shutdown_event, flags.short_messages), daemon=True)
@@ -294,13 +302,15 @@ def main():
     mllp_thread.join()
     pager_thread.join()
     # write the pages
-    print("Writing received pages...")
-    write_pages_to_file(received_pages)
+    #print("Writing received pages...")
+    #write_pages_to_file(received_pages)
 
-    print("Running evaluation of predictions vs ground truths...")
-    evaluate("predictions.csv", "aki.csv")
+    #print("Running evaluation of predictions vs ground truths...")
+    #evaluate("predictions.csv", "aki.csv")
 
 if __name__ == "__main__":
-    f3 = evaluate()
-    print(f"f3: {f3}")
-    #main()
+    #f3 = evaluate()
+    #print(f"f3: {f3}")
+    main()
+
+
