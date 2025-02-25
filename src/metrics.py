@@ -1,4 +1,5 @@
 from prometheus_client import start_http_server, Counter, Gauge
+from prometheus_client import Summary
 
 HL7_MESSAGES_RECEIVED = Counter('hl7_messages_received_total', 'Total number of HL7 messages received')
 INCORRECT_MESSAGES_RECEIVED = Counter('incorrect_messages_received_total', 'Total number of incorrectly formed HL7 messages received')
@@ -9,3 +10,6 @@ PREDICTIONS_MADE = Counter('aki_predictions_total', 'Total number of AKI predict
 POSITIVE_PREDICTIONS_MADE = Counter('aki_positive_predictions_total', 'Total number of positive AKI predictions made')
 MLLP_RECONNECTIONS = Counter('mllp_reconnections_total', 'Total number of mllp reconnection attempts to the socket')
 SYSTEM_UPTIME = Gauge('system_uptime_seconds', 'Time since the system started')
+
+# This metric can keep track of percentiles
+BLOOD_TEST_RESULT_SUMMARY = Summary('blood_test_result_summary','Summary of blood test result values (creatinine levels)')
