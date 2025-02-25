@@ -92,11 +92,11 @@ def main():
     # ---------------------------------------------------- #
     while True:
         try:
-            logging.info("[*] Starting MLLP listener...")
+            logging.info("main.py: [*] Starting MLLP listener...")
             mllp_listener.run()
         except Exception as e:
-            logging.error(f"[ERROR] Exception occurred in MLLP listener: {e}")
-            logging.info("[*] Restarting MLLP listener in 5 seconds...")
+            logging.error(f"main.py: [ERROR] Exception occurred in MLLP listener: {e}")
+            logging.info("main.py: [*] Restarting MLLP listener in 5 seconds...")
             time.sleep(5)  # Wait before restarting
 
     # ---------------------------------------------------- #
