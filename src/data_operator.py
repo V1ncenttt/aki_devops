@@ -69,6 +69,9 @@ class DataOperator:
         self.database.add_measurement(mrn, creatinine_value, test_time) 
         
         patient_vector = self.database.get_data(mrn) # Pull all data, including new measurment
+        if patient_vector is None:
+            return False
+
                 
         # TODO: Check if this  is ok????
         # Convert `measurement_date` to UNIX timestamp for XGBoost compatibility

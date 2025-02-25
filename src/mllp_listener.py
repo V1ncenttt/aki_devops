@@ -21,13 +21,14 @@ Example:
 """
 
 import os
+import csv
 import logging
 import socket
 import time
 import signal
 from src.parser import HL7Parser, START_BLOCK, END_BLOCK
 from src.data_operator import DataOperator
-from src.metrics import HL7_MESSAGES_RECEIVED, INCORRECT_MESSAGES_RECEIVED, MLLP_RECONNECTIONS, MLLP_SHUTDOWNS
+from src.metrics import HL7_MESSAGES_RECEIVED, INCORRECT_MESSAGES_RECEIVED, MLLP_RECONNECTIONS, MLLP_SHUTDOWNS, FAILED_MESSAGES, PARSED_MESSAGES
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -142,6 +143,7 @@ class MllpListener:
                             return
 
                         HL7_MESSAGES_RECEIVED.inc()
+                        PARSED_MESSAGES.append(hl7_message)
 
                         try:
                             status = self.data_operator.process_message(parsed_message)
@@ -150,6 +152,15 @@ class MllpListener:
                                 self.send_ack(hl7_message)
                             else:
                                 logging.error(f"Error processing message:\n{hl7_message}")
+                                FAILED_MESSAGES.append(hl7_message)
+                            
+                            # keep these in for now, see how to read from kubernetes then change accordingly
+                            if True:
+                                parsed_writer = csv.writer('/aki-system/state/parsed_messages.csv')
+                                parsed_writer.writerows(PARSED_MESSAGES)
+                                failed_writer = csv.writer('/aki-system/state/failed_messages.csv')
+                                failed_writer.writerows(FAILED_MESSAGES)
+
                             return
 
                         except Exception as e:

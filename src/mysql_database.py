@@ -187,7 +187,7 @@ class MySQLDatabase(Database):
             patient_data = self.session.query(Patient.age, Patient.sex).filter_by(mrn=mrn).first()
             if not patient_data:
                 logging.warning(f"No patient found for MRN {mrn}")
-                return pd.DataFrame()  # empty df if patient doesn't exist (I don't think this should happen)
+                return None  # empty df if patient doesn't exist (I don't think this should happen)
 
             age, sex = patient_data.age, patient_data.sex
             measurements = (
