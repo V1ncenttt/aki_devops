@@ -3,6 +3,7 @@ pandas==2.2.3
 Requests==2.32.3
 scikit_learn==1.6.1
 xgboost
+prometheus_client
 pymysql
 sqlalchemy
 cryptography

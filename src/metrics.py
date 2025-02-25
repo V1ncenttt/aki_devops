@@ -1,0 +1,19 @@
+from prometheus_client import start_http_server, Counter, Gauge
+from prometheus_client import Summary
+
+HL7_MESSAGES_RECEIVED = Counter('hl7_messages_received_total', 'Total number of HL7 messages received')
+INCORRECT_MESSAGES_RECEIVED = Counter('incorrect_messages_received_total', 'Total number of incorrectly formed HL7 messages received')
+BLOOD_TEST_RESULTS_RECEIVED = Counter('blood_test_results_received_total', 'Total number of HL7 messages received containing blood test results')
+ADMITTED_PATIENT_MESSAGES = Counter('adt_a01_received_total', 'Total number of patient admission messages received')
+DISCHARGED_PATIENT_MESSAGES = Counter('adt_a03_received_total', 'Total number of patient discharge messages received')
+AKI_PAGES_SENT = Counter('aki_pages_sent_total', 'Total number of AKI event pages sent')
+AKI_PAGES_FAILED = Counter('aki_pages_failed_total', 'Total number of failed AKI event pages')
+PREDICTIONS_MADE = Counter('aki_predictions_total', 'Total number of AKI predictions made')
+PREDICTIONS_FAILED = Counter('aki_predictions_failed', 'Total number of AKI predictions that failed')
+POSITIVE_PREDICTIONS_MADE = Counter('aki_positive_predictions_total', 'Total number of positive AKI predictions made')
+MLLP_RECONNECTIONS = Counter('mllp_reconnections_total', 'Total number of mllp reconnection attempts to the socket')
+SYSTEM_UPTIME = Gauge('system_uptime_seconds', 'Time since the system started')
+MLLP_SHUTDOWNS = Counter('mllp_shutdowns_total', 'Total number of MLLP listener shutdowns due to SIGTERM')
+
+# This metric can keep track of percentiles
+BLOOD_TEST_RESULT_SUMMARY = Summary('blood_test_result_summary','Summary of blood test result values (creatinine levels)')

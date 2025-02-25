@@ -11,7 +11,7 @@ services:
       MYSQL_PASSWORD: 'password'
       MYSQL_ROOT_PASSWORD: 'password'
     ports:
-      - '3306:3306'  # Consider removing if not needed externally
+      - '3306:3306'
     command: --local-infile=1
     volumes:
       - my-db:/var/lib/mysql
@@ -56,9 +56,60 @@ services:
       driver: "local"
     volumes:
       - ./logs:/var/log
+    ports:
+      - "8000:8000"  # Expose metrics for Prometheus
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"  # Exposes Prometheus UI
+    depends_on:
+      - aki-system
+    networks:
+      - my_network
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    configs:
+      - source: prometheus-config
+        target: /etc/prometheus/prometheus.yml  # Mount inside container
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: always
+    ports:
+      - "3000:3000"  # Expose Grafana UI
+    volumes:
+      - grafana-storage:/var/lib/grafana  # Persist dashboards & settings
+    networks:
+      - my_network
+    depends_on:
+      - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin  # Default password (change it)
+      - GF_USERS_ALLOW_SIGN_UP=false  # Disable new users
+      - GF_SERVER_DOMAIN=localhost
+
+configs:
+  prometheus-config:
+    content: |
+      global:
+        scrape_interval: 5s
+        evaluation_interval: 5s
+
+      scrape_configs:
+        - job_name: 'aki-detection'
+          static_configs:
+            - targets: ['aki-system:8000']
+
+        - job_name: 'prometheus'
+          static_configs:
+            - targets: ['localhost:9090']
 
 volumes:
   my-db:
+  grafana-storage:
 
 networks:
   my_network:

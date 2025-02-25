@@ -11,8 +11,11 @@ Run this script to start the system:
 
 """
 
-# file/class imports
-
+import os
+import time
+import logging
+from prometheus_client import start_http_server
+from src.metrics import HL7_MESSAGES_RECEIVED, AKI_PAGES_SENT, AKI_PAGES_FAILED, PREDICTIONS_MADE, SYSTEM_UPTIME
 from src.pandas_database import PandasDatabase
 from src.mllp_listener import MllpListener
 from src.model import Model
@@ -27,12 +30,16 @@ def main():
     """
     Main function that initializes and runs the HL7 message processing system.
     """
-    # read the environment variables for the mllp and pager ports
+    # Start Prometheus metrics server
+    start_http_server(8000)  # Exposes metrics at http://localhost:8000/metrics
+    SYSTEM_UPTIME.set(time.time())  # Set system start time
+
+    # Read environment variables for MLLP and pager ports
     mllp_address = os.getenv("MLLP_ADDRESS", "message-simulator:8440")
     pager_address = os.getenv("PAGER_ADDRESS", "message-simulator:8441")
 
     # ---------------------------------------------------- #
-    # initialization stage
+    # Initialization stage
     # ---------------------------------------------------- #
     # msg_queue = []#asyncio.Queue()
     # parsed_queue = []#asyncio.Queue()
@@ -81,30 +88,22 @@ def main():
     mllp_listener = MllpListener(mllp_address, parser, data_operator)
 
     # ---------------------------------------------------- #
-    # Running the system (stage)
+    # Running the system
     # ---------------------------------------------------- #
-    try:
-        while True:
+    while True:
+        try:
+            logging.info("[*] Starting MLLP listener...")
             mllp_listener.run()
-            
-    except Exception as e:
-        print(f"Exception occured:\n{e}")
-        print("Process interrupted")
-
+        except Exception as e:
+            logging.error(f"[ERROR] Exception occurred in MLLP listener: {e}")
+            logging.info("[*] Restarting MLLP listener in 5 seconds...")
+            time.sleep(5)  # Wait before restarting
 
     # ---------------------------------------------------- #
-    #shutdown stage
+    # Shutdown stage
     # ---------------------------------------------------- #
-    mllp_listener.shutdown()  
-    
-
-
+    mllp_listener.shutdown()
 
 
 if __name__ == "__main__":
-    """
-    Entry point for running the system.
-    """
     main()
-   
-
