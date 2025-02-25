@@ -43,7 +43,6 @@ spec:
       containers:
       - name: mysql
         image: mysql:8.0
-        command:  # Specify the command if needed
         env:
           - name: MYSQL_ROOT_PASSWORD
             value: "password"
@@ -55,34 +54,18 @@ spec:
             value: "password"
         ports:
           - containerPort: 3306
-        readinessProbe:
-            exec:
-              command:
-                - "mysqladmin"
-                - "ping"
-                - "--silent"
-            initialDelaySeconds: 10  # Wait 10 seconds before starting readiness check
-            periodSeconds: 5  # Check every 5 seconds
         volumeMounts:
           - name: mysql-storage
             mountPath: /var/lib/mysql
-          - name: init-sql
-            mountPath: /docker-entrypoint-initdb.d/init.sql
-            subPath: init.sql  # Mount the init.sql file from ConfigMap into the expected directory
         resources:
           requests:
-            cpu: "500m"
-            memory: "700M" # Set max memory to 512Mi (512MB) # Max memory (512MB)
+            cpu: "500m"     # Max CPU (0.5)
+            memory: "512Mi" # Max memory (512MB)
       volumes:
       - name: mysql-storage
         persistentVolumeClaim:
           claimName: aki-detection-state
-      - name: init-sql
-        configMap:
-          name: mysql-init-sql  # Reference the ConfigMap that contains the init.sql file
-          
-        
---- 
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -132,8 +115,8 @@ spec:
             name: app-storage
         resources:
           requests:
-            cpu: "500m"     # Use only 750m, since MySQL is using 250m
-            memory: "250M" # Use available memory
+            cpu: "500m"     # Max CPU (0.5)
+            memory: "512Mi" # Max memory (512MB)
       initContainers:
       - name: copy-hospital-history
         image: imperialswemlsspring2025.azurecr.io/coursework4-history
@@ -142,9 +125,8 @@ spec:
             name: hospital-history
         resources:
           requests:
-            cpu: "500m"     # Use only 750m, since MySQL is using 250m
-            memory: "250M" # Use available memory
-
+            memory: "1G"
+            cpu: "1"
       volumes:
       - name: hospital-history
         emptyDir:
