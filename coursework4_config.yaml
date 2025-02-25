@@ -42,7 +42,7 @@ spec:
         - name: http
           containerPort: 8000
         - name: metrics
-          containerPort: 9100  # Expose metrics for Prometheus
+          containerPort: 8000  # Expose metrics for Prometheus
         volumeMounts:
           - mountPath: "/aki-system/data"
             name: hospital-history
