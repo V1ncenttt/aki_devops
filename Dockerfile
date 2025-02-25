@@ -24,6 +24,6 @@ COPY aki_detection.joblib /aki-system/
 
 EXPOSE 8440
 EXPOSE 8441
-EXPOSE 9100
+EXPOSE 8000
 
 ENTRYPOINT ["/aki-system/bin/python3", "/aki-system/main.py"]
