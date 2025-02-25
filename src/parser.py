@@ -35,6 +35,7 @@ Example:
 """
 
 from datetime import datetime
+import logging
 
 # MLLP Delimiters
 START_BLOCK = b"\x0b"
@@ -175,12 +176,12 @@ class HL7Parser:
                     self._parse_obx(fields)
             output = self._generate_output()
             if output[0] is None:
-                print(f"[ERROR] Unrecognized message type. Raw HL7 Message: {message}")
+                logging.error(f"parser.py: [ERROR] Unrecognized message type. Raw HL7 Message: {message}")
 
             return self._generate_output()
 
         except (TypeError, IndexError, ValueError) as e:
-            print(f"Error parsing HL7 message: {e}")
+            logging.error(f"parser.py: Error parsing HL7 message: {e}")
 
             return None, None, None
 
@@ -260,8 +261,8 @@ class HL7Parser:
             return self.message_type, self.patient_data, None
         if self.message_type == "ORU^R01":
             return self.message_type, None, self.blood_tests
-        print(
-            f"[ERROR] _generate_output() returned None! Message Type: {self.message_type}"
+        logging.info(
+            f"parser.py: [ERROR] _generate_output() returned None! Message Type: {self.message_type}"
         )
 
         return None, None, None

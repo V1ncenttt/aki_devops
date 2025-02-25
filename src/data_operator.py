@@ -63,7 +63,7 @@ class DataOperator:
         Returns:
             bool: True if prediction was successful, False otherwise.
         """
-        logging.info(f"[WORKER] Processing Patient {mrn} at {test_time}...")
+        logging.info(f"data_operator.py: [WORKER] Processing Patient {mrn} at {test_time}...")
         
         # Measurment added first 
         self.database.add_measurement(mrn, creatinine_value, test_time) 
@@ -84,7 +84,7 @@ class DataOperator:
             positive_prediction = self.model.predict_aki(patient_vector)
             PREDICTIONS_MADE.inc()
         except Exception as e:
-            logging.error(f"Error from model.py\nException:\n{e}")
+            logging.error(f"data_operator.py: Error from model.py\nException:\n{e}")
             PREDICTIONS_FAILED.inc()  # Track failed predictions
             return False
         
@@ -112,7 +112,7 @@ class DataOperator:
 
 
         self.database.add_patient(mrn, age, sex)
-        logging.info(f"Patient {name} with MRN {mrn} added to the database")
+        logging.info(f"data_operator.py: Patient {name} with MRN {mrn} added to the database")
 
         return True
 
@@ -131,7 +131,7 @@ class DataOperator:
         creatinine_value = message[2][0]["test_value"]
         test_time = message[2][0]["test_time"]
 
-        logging.info(f"Patient {mrn} has creatinine value {creatinine_value} at {test_time}")
+        logging.info(f"data_operator.py: Patient {mrn} has creatinine value {creatinine_value} at {test_time}")
         status = self.process_patient(mrn, creatinine_value, test_time)
         return status
 
@@ -156,7 +156,7 @@ class DataOperator:
             DISCHARGED_PATIENT_MESSAGES.inc()
             status = True  # Placeholder, can be modified if needed
         else:
-            logging.error(f"Unknown Message type {message}")
+            logging.error(f"data_operator.py: Unknown Message type {message}")
             raise ValueError(f"Unknown Message type {message}")
         
         return status  # Ensures `main.py` knows if prediction was successful
