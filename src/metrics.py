@@ -4,6 +4,8 @@ from prometheus_client import Summary
 HL7_MESSAGES_RECEIVED = Counter('hl7_messages_received_total', 'Total number of HL7 messages received')
 INCORRECT_MESSAGES_RECEIVED = Counter('incorrect_messages_received_total', 'Total number of incorrectly formed HL7 messages received')
 BLOOD_TEST_RESULTS_RECEIVED = Counter('blood_test_results_received_total', 'Total number of HL7 messages received containing blood test results')
+ADMITTED_PATIENT_MESSAGES = Counter('adt_a01_received_total', 'Total number of patient admission messages received')
+DISCHARGED_PATIENT_MESSAGES = Counter('adt_a03_received_total', 'Total number of patient discharge messages received')
 AKI_PAGES_SENT = Counter('aki_pages_sent_total', 'Total number of AKI event pages sent')
 AKI_PAGES_FAILED = Counter('aki_pages_failed_total', 'Total number of failed AKI event pages')
 PREDICTIONS_MADE = Counter('aki_predictions_total', 'Total number of AKI predictions made')
