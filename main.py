@@ -28,7 +28,7 @@ def main():
     Main function that initializes and runs the HL7 message processing system.
     """
     # Start Prometheus metrics server
-    start_http_server(8000)  # Exposes metrics at http://localhost:8000/metrics
+    start_http_server(9100)  # Exposes metrics at http://localhost:8000/metrics
     SYSTEM_UPTIME.set(time.time())  # Set system start time
 
     # Read environment variables for MLLP and pager ports
