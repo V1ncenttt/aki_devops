@@ -26,10 +26,12 @@ import socket
 import time
 from src.parser import HL7Parser, START_BLOCK, END_BLOCK
 from src.data_operator import DataOperator
+from prometheus_client import Counter, Gauge
 
 import os
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+hl7_messages_received = Counter('hl7_messages_received_total', 'Total number of HL7 messages received')
 
 class MllpListener:
     """
@@ -135,6 +137,7 @@ class MllpListener:
                         return
 
                     # Invariant: message is parsed correctly
+                    hl7_messages_received.inc()
                     try:
                         # forward message to data_operator for further processing
                         status = self.data_operator.process_message(parsed_message)
