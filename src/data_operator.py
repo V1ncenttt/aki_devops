@@ -31,11 +31,6 @@ from src.metrics import BLOOD_TEST_RESULTS_RECEIVED, PREDICTIONS_MADE, POSITIVE_
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# ------------------ Prometheus Metrics ------------------ #
-hl7_messages_processed = Counter('hl7_messages_processed_total', 'Total number of HL7 messages processed')
-aki_predictions_successful = Counter('aki_predictions_successful_total', 'Total number of successful AKI predictions')
-aki_predictions_failed = Counter('aki_predictions_failed_total', 'Total number of failed AKI predictions')
-patients_added = Counter('patients_added_total', 'Total number of new patients added')
 
 class DataOperator:
     """
@@ -95,9 +90,7 @@ class DataOperator:
         if positive_prediction:
             POSITIVE_PREDICTIONS_MADE.inc()
             self.pager.send_pager_alert(mrn, test_time)
-            #aki_predictions_successful.inc()  # Track successful predictions
 
-        self.database.add_measurement(mrn, creatinine_value, test_time)
         return True
 
     def process_adt_message(self, message):  
