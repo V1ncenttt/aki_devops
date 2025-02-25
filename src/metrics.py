@@ -13,6 +13,7 @@ PREDICTIONS_FAILED = Counter('aki_predictions_failed', 'Total number of AKI pred
 POSITIVE_PREDICTIONS_MADE = Counter('aki_positive_predictions_total', 'Total number of positive AKI predictions made')
 MLLP_RECONNECTIONS = Counter('mllp_reconnections_total', 'Total number of mllp reconnection attempts to the socket')
 SYSTEM_UPTIME = Gauge('system_uptime_seconds', 'Time since the system started')
+MLLP_SHUTDOWNS = Counter('mllp_shutdowns_total', 'Total number of MLLP listener shutdowns due to SIGTERM')
 
 # This metric can keep track of percentiles
 BLOOD_TEST_RESULT_SUMMARY = Summary('blood_test_result_summary','Summary of blood test result values (creatinine levels)')
