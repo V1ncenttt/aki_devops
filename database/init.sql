@@ -20,7 +20,7 @@ CREATE TABLE Measurements (
 -- Index for fast lookups of measurements by mrn
 CREATE INDEX idx_measurements_mrn ON Measurements(mrn);
 
--- Index for fast queries on measurement_date
-CREATE INDEX idx_measurements_date ON Measurements(measurement_date);
+-- Index for fast queries on creatinine_date
+CREATE INDEX idx_measurements_date ON Measurements(creatinine_date);
 
 -- Use SQL dump????
