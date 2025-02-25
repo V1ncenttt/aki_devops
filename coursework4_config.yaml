@@ -71,6 +71,27 @@ spec:
         persistentVolumeClaim:
           claimName: aki-detection-state
 ---
+# Prometheus ConfigMap (Contains prometheus.yml)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: europe
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 5s
+      evaluation_interval: 5s
+
+    scrape_configs:
+      - job_name: 'aki-detection'
+        static_configs:
+          - targets: ['aki-detection:8000']
+
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+---
 # Prometheus Deployment
 apiVersion: apps/v1
 kind: Deployment
@@ -115,41 +136,4 @@ spec:
     - protocol: TCP
       port: 9090
       targetPort: 9090
----
-# Alertmanager Deployment
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: alertmanager
-  namespace: europe
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: alertmanager
-  template:
-    metadata:
-      labels:
-        app: alertmanager
-    spec:
-      containers:
-        - name: alertmanager
-          image: prom/alertmanager
-          args:
-            - "--config.file=/etc/alertmanager/alertmanager.yml"
-          ports:
-            - containerPort: 9093
----
-# Alertmanager Service
-apiVersion: v1
-kind: Service
-metadata:
-  name: alertmanager
-  namespace: europe
-spec:
-  selector:
-    app: alertmanager
-  ports:
-    - protocol: TCP
-      port: 9093
-      targetPort: 9093
+
