@@ -23,7 +23,8 @@ from src.data_operator import DataOperator
 from src.pager import Pager
 from src.mysql_database import MySQLDatabase
 from src.parser import HL7Parser
-
+from src.database_populator import DatabasePopulator
+import os
 
 def main():
     """
@@ -63,7 +64,16 @@ def main():
     # initialize in reverse order so everything connects to the next module
     parser = HL7Parser() 
     # database = PandasDatabase('data/history.csv')
-
+    db_populator = DatabasePopulator(
+        db=os.getenv("MYSQL_DB", "hospital_db"), 
+        history_file="data/history.csv", #TODO: Change that when we use kubernetes (to the right folder!!!)
+        user=os.getenv("MYSQL_USER", "user"), 
+        password= os.getenv("MYSQL_PASSWORD", "password"),
+        host=os.getenv("MYSQL_HOST", "db"),
+        port=os.getenv("MYSQL_PORT", "3306") 
+        ) #TODO: Change that when we use kubernetes (to the right folder!!!)
+    db_populator.populate()
+    
     database = MySQLDatabase(
     host=os.getenv("MYSQL_HOST", "db"),
     port=os.getenv("MYSQL_PORT", "3306"),

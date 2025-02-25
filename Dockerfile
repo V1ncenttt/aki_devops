@@ -18,8 +18,10 @@ COPY src/data_operator.py /aki-system/src
 COPY src/model.py /aki-system/src/
 COPY src/mysql_database.py /aki-system/src/
 COPY src/pager.py /aki-system/src/
+COPY src/database_populator.py /aki-system/src/
 COPY requirements.txt /aki-system/
 COPY data/history.csv /aki-system/data/
+COPY database/ /aki-system/database/
 COPY aki_detection.joblib /aki-system/
 
 EXPOSE 8440

@@ -15,7 +15,7 @@ services:
     command: --local-infile=1
     volumes:
       - my-db:/var/lib/mysql
-      - ./database/dump.sql:/docker-entrypoint-initdb.d/dump.sql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - my_network  
     healthcheck:
