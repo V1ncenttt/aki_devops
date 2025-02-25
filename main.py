@@ -88,18 +88,15 @@ def main():
     try:
         while True:
             #hl7_messages_received.inc()
-            message = mllp_listener.run()
+            mllp_listener.run()
 
-            if message:
-                status = data_operator.process_message(message)
-
-                if status:
-                    PREDICTIONS_MADE.inc()  # Track predictions made
-
-                if pager.last_page_status() == "success":
-                    AKI_PAGES_SENT.inc()
-                elif pager.last_page_status() == "failed":
-                    AKI_PAGES_FAILED.inc()
+            #    if status:
+            #        PREDICTIONS_MADE.inc()  # Track predictions made
+#
+            #    if pager.last_page_status() == "success":
+            #        AKI_PAGES_SENT.inc()
+            #    elif pager.last_page_status() == "failed":
+            #        AKI_PAGES_FAILED.inc()
 
     except Exception as e:
         print(f"Exception occurred:\n{e}")

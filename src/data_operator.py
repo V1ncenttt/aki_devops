@@ -27,7 +27,7 @@ import logging
 from src.database import Database
 from src.model import Model
 from src.pager import Pager
-from prometheus_client import Counter
+from src.metrics import BLOOD_TEST_RESULTS_RECEIVED
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -153,6 +153,7 @@ class DataOperator:
         hl7_messages_processed.inc()  # Track each HL7 message processed
 
         if message[0] == "ORU^R01":
+            BLOOD_TEST_RESULTS_RECEIVED.inc()
             status = self.process_oru_message(message) 
         elif message[0] == "ADT^A01":
             status = self.process_adt_message(message) 

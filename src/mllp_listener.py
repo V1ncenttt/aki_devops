@@ -26,12 +26,11 @@ import socket
 import time
 from src.parser import HL7Parser, START_BLOCK, END_BLOCK
 from src.data_operator import DataOperator
-from prometheus_client import Counter, Gauge
+from src.metrics import HL7_MESSAGES_RECEIVED, INCORRECT_MESSAGES_RECEIVED
 
 import os
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-hl7_messages_received = Counter('hl7_messages_received_total', 'Total number of HL7 messages received')
 
 class MllpListener:
     """
@@ -128,16 +127,21 @@ class MllpListener:
 
                     parsed_message = self.parser.parse(hl7_message)
                     
+                    # if we have it before the next if block we are also counting invalid messages, idk man
+                    HL7_MESSAGES_RECEIVED.inc()
                     
                     if parsed_message is None or parsed_message[0] is None:
                         logging.error("Received invalid HL7 message or unknown message type:")
                         logging.error(f"{parsed_message}")
+                        INCORRECT_MESSAGES_RECEIVED.inc()
                         # return back to main.py without sending an ACK
                         # TODO: introduce some safety mechanism here
                         return
+                    
+
+
 
                     # Invariant: message is parsed correctly
-                    hl7_messages_received.inc()
                     try:
                         # forward message to data_operator for further processing
                         status = self.data_operator.process_message(parsed_message)
