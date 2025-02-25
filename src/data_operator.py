@@ -27,7 +27,7 @@ import logging
 from src.database import Database
 from src.model import Model
 from src.pager import Pager
-from src.metrics import BLOOD_TEST_RESULTS_RECEIVED
+from src.metrics import BLOOD_TEST_RESULTS_RECEIVED, PREDICTIONS_MADE, POSITIVE_PREDICTIONS_MADE
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -86,14 +86,16 @@ class DataOperator:
         # if aki-prediction is positive, send a pager alert
         try:
             positive_prediction = self.model.predict_aki(patient_vector)
+            PREDICTIONS_MADE.inc()
         except Exception as e:
             logging.error(f"Error from model.py\nException:\n{e}")
             aki_predictions_failed.inc()  # Track failed predictions
             return False
         
         if positive_prediction:
+            POSITIVE_PREDICTIONS_MADE.inc()
             self.pager.send_pager_alert(mrn, test_time)
-            aki_predictions_successful.inc()  # Track successful predictions
+            #aki_predictions_successful.inc()  # Track successful predictions
 
         self.database.add_measurement(mrn, creatinine_value, test_time)
         return True

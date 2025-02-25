@@ -23,6 +23,7 @@ Example:
 import logging
 import requests
 import time
+from src.metrics import AKI_PAGES_SENT, AKI_PAGES_FAILED
 
 class Pager:
     """
@@ -66,6 +67,9 @@ class Pager:
         for _ in range(3):  # Retry 3 times if there is a failure
             try:
                 response = requests.post(self.pager_url, data=content, timeout=5)
+                AKI_PAGES_SENT.inc()
+                if response.status_code != 200:
+                    AKI_PAGES_FAILED.inc()
                 response.raise_for_status()
                 return
             except requests.RequestException as e:

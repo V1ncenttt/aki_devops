@@ -26,7 +26,7 @@ import socket
 import time
 from src.parser import HL7Parser, START_BLOCK, END_BLOCK
 from src.data_operator import DataOperator
-from src.metrics import HL7_MESSAGES_RECEIVED, INCORRECT_MESSAGES_RECEIVED
+from src.metrics import HL7_MESSAGES_RECEIVED, INCORRECT_MESSAGES_RECEIVED, MLLP_RECONNECTIONS
 
 import os
 
@@ -67,6 +67,7 @@ class MllpListener:
         Retries every 5 seconds if the connection fails.
         """
         while True:
+            MLLP_RECONNECTIONS.inc()
             try:
                 mllp_host = self.mllp_address.split(":")[0]
                 mllp_port = int(self.mllp_address.split(":")[1])
