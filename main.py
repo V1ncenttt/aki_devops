@@ -23,13 +23,6 @@ from src.pager import Pager
 from src.mysql_database import MySQLDatabase
 from src.parser import HL7Parser
 
-# ------------------ Prometheus Metrics ------------------ #
-#hl7_messages_received = Counter('hl7_messages_received_total', 'Total number of HL7 messages received')
-#aki_pages_sent = Counter('aki_pages_sent_total', 'Total number of AKI event pages sent')
-#aki_pages_failed = Counter('aki_pages_failed_total', 'Total number of failed AKI event pages')
-#predictions_made = Counter('aki_predictions_total', 'Total number of AKI predictions made')
-#system_uptime = Gauge('system_uptime_seconds', 'Time since the system started')
-
 def main():
     """
     Main function that initializes and runs the HL7 message processing system.
@@ -86,17 +79,9 @@ def main():
     # Running the system
     # ---------------------------------------------------- #
     try:
-        while True:
-            #hl7_messages_received.inc()
-            mllp_listener.run()
+        #while True: CHECK IF OKAY
+        mllp_listener.run()
 
-            #    if status:
-            #        PREDICTIONS_MADE.inc()  # Track predictions made
-#
-            #    if pager.last_page_status() == "success":
-            #        AKI_PAGES_SENT.inc()
-            #    elif pager.last_page_status() == "failed":
-            #        AKI_PAGES_FAILED.inc()
 
     except Exception as e:
         print(f"Exception occurred:\n{e}")
