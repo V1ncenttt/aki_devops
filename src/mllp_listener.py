@@ -26,6 +26,7 @@ import socket
 import time
 from src.parser import HL7Parser, START_BLOCK, END_BLOCK
 from src.data_operator import DataOperator
+from src.metrics import HL7_MESSAGES_RECEIVED, INCORRECT_MESSAGES_RECEIVED, MLLP_RECONNECTIONS
 
 import os
 
@@ -66,6 +67,7 @@ class MllpListener:
         Retries every 5 seconds if the connection fails.
         """
         while True:
+            MLLP_RECONNECTIONS.inc()
             try:
                 mllp_host = self.mllp_address.split(":")[0]
                 mllp_port = int(self.mllp_address.split(":")[1])
@@ -126,13 +128,19 @@ class MllpListener:
 
                     parsed_message = self.parser.parse(hl7_message)
                     
+                    # if we have it before the next if block we are also counting invalid messages, idk man
+                    HL7_MESSAGES_RECEIVED.inc()
                     
                     if parsed_message is None or parsed_message[0] is None:
                         logging.error("Received invalid HL7 message or unknown message type:")
                         logging.error(f"{parsed_message}")
+                        INCORRECT_MESSAGES_RECEIVED.inc()
                         # return back to main.py without sending an ACK
                         # TODO: introduce some safety mechanism here
                         return
+                    
+
+
 
                     # Invariant: message is parsed correctly
                     try:

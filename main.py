@@ -13,7 +13,8 @@ Run this script to start the system:
 
 import os
 import time
-from prometheus_client import start_http_server, Counter, Gauge
+from prometheus_client import start_http_server
+from src.metrics import HL7_MESSAGES_RECEIVED, AKI_PAGES_SENT, AKI_PAGES_FAILED, PREDICTIONS_MADE, SYSTEM_UPTIME
 from src.pandas_database import PandasDatabase
 from src.mllp_listener import MllpListener
 from src.model import Model
@@ -23,11 +24,11 @@ from src.mysql_database import MySQLDatabase
 from src.parser import HL7Parser
 
 # ------------------ Prometheus Metrics ------------------ #
-hl7_messages_received = Counter('hl7_messages_received_total', 'Total number of HL7 messages received')
-aki_pages_sent = Counter('aki_pages_sent_total', 'Total number of AKI event pages sent')
-aki_pages_failed = Counter('aki_pages_failed_total', 'Total number of failed AKI event pages')
-predictions_made = Counter('aki_predictions_total', 'Total number of AKI predictions made')
-system_uptime = Gauge('system_uptime_seconds', 'Time since the system started')
+#hl7_messages_received = Counter('hl7_messages_received_total', 'Total number of HL7 messages received')
+#aki_pages_sent = Counter('aki_pages_sent_total', 'Total number of AKI event pages sent')
+#aki_pages_failed = Counter('aki_pages_failed_total', 'Total number of failed AKI event pages')
+#predictions_made = Counter('aki_predictions_total', 'Total number of AKI predictions made')
+#system_uptime = Gauge('system_uptime_seconds', 'Time since the system started')
 
 def main():
     """
@@ -35,7 +36,7 @@ def main():
     """
     # Start Prometheus metrics server
     start_http_server(8000)  # Exposes metrics at http://localhost:8000/metrics
-    system_uptime.set(time.time())  # Set system start time
+    SYSTEM_UPTIME.set(time.time())  # Set system start time
 
     # Read environment variables for MLLP and pager ports
     mllp_address = os.getenv("MLLP_ADDRESS", "message-simulator:8440")
@@ -86,19 +87,16 @@ def main():
     # ---------------------------------------------------- #
     try:
         while True:
-            hl7_messages_received.inc()
-            message = mllp_listener.run()
+            #hl7_messages_received.inc()
+            mllp_listener.run()
 
-            if message:
-                status = data_operator.process_message(message)
-
-                if status:
-                    predictions_made.inc()  # Track predictions made
-
-                if pager.last_page_status() == "success":
-                    aki_pages_sent.inc()
-                elif pager.last_page_status() == "failed":
-                    aki_pages_failed.inc()
+            #    if status:
+            #        PREDICTIONS_MADE.inc()  # Track predictions made
+#
+            #    if pager.last_page_status() == "success":
+            #        AKI_PAGES_SENT.inc()
+            #    elif pager.last_page_status() == "failed":
+            #        AKI_PAGES_FAILED.inc()
 
     except Exception as e:
         print(f"Exception occurred:\n{e}")
