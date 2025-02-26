@@ -109,12 +109,12 @@ class MySQLDatabase(Database):
             try:
                 self.session = self.Session()
                 logging.info("mysql_database.py: Connected to MySQL database.")
-                self.connected = True
                 return
             except SQLAlchemyError as e:
                 logging.error(f"mysql_database.py: Database connection failed (attempt {attempt + 1}): {e}")
                 attempt += 1
                 time.sleep(delay)
+                delay *= 1.5
 
     def disconnect(self):
         """
@@ -132,21 +132,31 @@ class MySQLDatabase(Database):
             age (int, optional): Age of the patient.
             sex (str, optional): Gender of the patient ('M', 'F', 'Other').
         """
-        try:
+        succeded = False
+        attempt = 0
+        
+        while not succeded:
+            try:
+                logging.info(f"mysql_database.py: Adding patient with MRN {mrn}... (attempt {attempt + 1})")
+                stmt = insert(Patient).values(mrn=mrn, age=age, sex=sex)
+                stmt = stmt.on_duplicate_key_update(
+                    age=stmt.inserted.age,
+                    sex=stmt.inserted.sex
+                )
+                self.session.execute(stmt)
+                self.session.commit()
 
-            logging.info(f"mysql_database.py: Adding patient with MRN {mrn}...")
-            stmt = insert(Patient).values(mrn=mrn, age=age, sex=sex)
-            stmt = stmt.on_duplicate_key_update(
-                age=stmt.inserted.age,
-                sex=stmt.inserted.sex
-            )
-            self.session.execute(stmt)
-            self.session.commit()
-
-            logging.info(f"mysql_database.py: Added patient with MRN {mrn}.")
-        except SQLAlchemyError as e:
-            self.session.rollback()
-            logging.error(f"mysql_database.py: Error adding patient: {e}")
+                logging.info(f"mysql_database.py: Added patient with MRN {mrn}.")
+                
+                succeded = True
+                return True
+            
+            except SQLAlchemyError as e:
+                attempt += 1
+                self.session.rollback()
+                logging.error(f"mysql_database.py: Error adding patient: {e}")
+                self.connect()
+                time.sleep(1)
 
     def add_measurement(self, mrn: str, creatinine_result: float, creatinine_date=None) -> None:
         """
@@ -157,20 +167,35 @@ class MySQLDatabase(Database):
             creatinine_result (float): Measured creatinine value.
             creatinine_date (datetime, optional): Timestamp of the measurement.
         """
-        try:
-            creatinine_date = creatinine_date or datetime.now(timezone.utc)
-            stmt = insert(Measurement).values(
-                mrn=mrn, creatinine_result=creatinine_result, creatinine_date=creatinine_date
-            )
-            stmt = stmt.on_duplicate_key_update(creatinine_result=stmt.inserted.creatinine_result)
+        succeded = False
+        attempt = 0 
+        
+        while not succeded:
+            try:
+                logging.info(f"mysql_database.py: Adding measurement for MRN {mrn}... (attempt {attempt + 1})")
+                
+                creatinine_date = creatinine_date or datetime.now(timezone.utc)
+                stmt = insert(Measurement).values(
+                    mrn=mrn, creatinine_result=creatinine_result, creatinine_date=creatinine_date
+                )
+                stmt = stmt.on_duplicate_key_update(creatinine_result=stmt.inserted.creatinine_result)
 
-            self.session.execute(stmt)
-            self.session.commit()
+                self.session.execute(stmt)
+                self.session.commit()
 
-            logging.info(f"mysql_database.py: Added measurement for MRN {mrn}.")
-        except SQLAlchemyError as e:
-            self.session.rollback()
-            logging.error(f"mysql_database.py: Error adding measurement: {e}")
+                logging.info(f"mysql_database.py: Added measurement for MRN {mrn}.")
+                
+                succeded = True # Might be used for stats
+                return True
+            
+            except SQLAlchemyError as e:
+                attempt += 1
+                self.session.rollback()
+                logging.error(f"mysql_database.py: Error adding measurement: {e}")
+                self.connect()
+                time.sleep(1)
+        
+        return False
 
     def get_data(self, mrn: str):
         """
@@ -183,48 +208,57 @@ class MySQLDatabase(Database):
             DataFrame: DataFrame with columns ['creatinine_date', 'creatinine_result'] sorted by date.
         """
 
+        succeded = False
+        attempt = 0
+        
+        while not succeded:
+            
+            try:
+                # Query both tables to get measurements and  patient info
+                logging.info(f"mysql_database.py: Retrieving data for MRN {mrn}... (attempt {attempt + 1})")
+                patient_data = self.session.query(Patient.age, Patient.sex).filter_by(mrn=mrn).first()
+                if not patient_data:
+                    logging.warning(f"mysql_database.py: No patient found for MRN {mrn}")
+                    return None  # empty df if patient doesn't exist (I don't think this should happen)
 
-        try:
-            # Query both tables to get measurements and  patient info
+                age, sex = patient_data.age, patient_data.sex
+                measurements = (
+                self.session.query(Measurement.creatinine_date, Measurement.creatinine_result)
+                .filter_by(mrn=mrn)
+                .order_by(Measurement.creatinine_date.asc())
+                .all()
+                )
 
-            patient_data = self.session.query(Patient.age, Patient.sex).filter_by(mrn=mrn).first()
-            if not patient_data:
-                logging.warning(f"mysql_database.py: No patient found for MRN {mrn}")
-                return None  # empty df if patient doesn't exist (I don't think this should happen)
+                # Convert results to DataFrame
+                df = pd.DataFrame(measurements, columns=['creatinine_date', 'creatinine_result'])
 
-            age, sex = patient_data.age, patient_data.sex
-            measurements = (
-            self.session.query(Measurement.creatinine_date, Measurement.creatinine_result)
-            .filter_by(mrn=mrn)
-            .order_by(Measurement.creatinine_date.asc())
-            .all()
-            )
+                # Ensure datetime format for processing
+                df['creatinine_date'] = pd.to_datetime(df['creatinine_date'], errors='coerce')
 
-            # Convert results to DataFrame
-            df = pd.DataFrame(measurements, columns=['creatinine_date', 'creatinine_result'])
+                # Convert to Feature Vector (Flatten)
+                flattened_features = {
+                    'age': age,
+                    'sex': sex,
+                }
 
-            # Ensure datetime format for processing
-            df['creatinine_date'] = pd.to_datetime(df['creatinine_date'], errors='coerce')
+                # Convert measurement history to columns like creatinine_date_0, creatinine_result_0, etc.
+                for i, row in df.iterrows():
+                    flattened_features[f'creatinine_date_{i}'] = row['creatinine_date']
+                    flattened_features[f'creatinine_result_{i}'] = row['creatinine_result']
 
-            # Convert to Feature Vector (Flatten)
-            flattened_features = {
-                'age': age,
-                'sex': sex,
-            }
+                # Convert to DataFrame (Single Row)
+                feature_df = pd.DataFrame([flattened_features])
 
-            # Convert measurement history to columns like creatinine_date_0, creatinine_result_0, etc.
-            for i, row in df.iterrows():
-                flattened_features[f'creatinine_date_{i}'] = row['creatinine_date']
-                flattened_features[f'creatinine_result_{i}'] = row['creatinine_result']
+                succeded = True
+                return feature_df
 
-            # Convert to DataFrame (Single Row)
-            feature_df = pd.DataFrame([flattened_features])
-
-            return feature_df
-
-        except SQLAlchemyError as e:
-            logging.error(f"Error retrieving data for MRN {mrn}: {e}")
-            return pd.DataFrame(columns=['creatinine_date', 'creatinine_result', 'age', 'sex'])
+            except SQLAlchemyError as e:
+                attempt += 1
+                logging.error(f"Error retrieving data for MRN {mrn}: {e}")
+                self.connect()
+                time.sleep(1)
+                
+        return None
 
 if __name__ == "__main__":
 
