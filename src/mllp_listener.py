@@ -144,7 +144,7 @@ class MllpListener:
                             return
 
                         HL7_MESSAGES_RECEIVED.inc()
-                        PARSED_MESSAGES.append(hl7_message)
+                        #PARSED_MESSAGES.append(hl7_message)
 
                         try:
                             logging.info("mllp_listener.py: Forwarding hl7 message to data operator")
@@ -154,7 +154,7 @@ class MllpListener:
                                 self.send_ack(hl7_message)
                             else:
                                 logging.error(f"mllp_listener.py: Error processing message:\n{hl7_message}")
-                                FAILED_MESSAGES.append(hl7_message)
+                                #FAILED_MESSAGES.append(hl7_message)
                             
                             # keep these in for now, see how to read from kubernetes then change accordingly
                             #if True:
