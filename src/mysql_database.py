@@ -28,6 +28,7 @@ Authors:
     - Alison Lupton (alison.lupton24@ic.ac.uk)
 """
 from datetime import datetime, timezone
+import time
 import logging
 from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, ForeignKey, Enum
 from sqlalchemy.exc import SQLAlchemyError
@@ -99,12 +100,21 @@ class MySQLDatabase(Database):
 
 
 
-    def connect(self):
+    def connect(self, delay=5):
         """
-        Opens a new session with the database.
+        Opens a new session with the database. Retries indefinitely until successful.
         """
-        self.session = self.Session()
-        logging.info("mysql_database.py: Connected to MySQL database.")
+        attempt = 0
+        while True:
+            try:
+                self.session = self.Session()
+                logging.info("mysql_database.py: Connected to MySQL database.")
+                self.connected = True
+                return
+            except SQLAlchemyError as e:
+                logging.error(f"mysql_database.py: Database connection failed (attempt {attempt + 1}): {e}")
+                attempt += 1
+                time.sleep(delay)
 
     def disconnect(self):
         """
