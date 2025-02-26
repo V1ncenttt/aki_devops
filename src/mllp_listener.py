@@ -145,7 +145,7 @@ class MllpListener:
                 with open(failed_file_path, 'a', newline='') as failed_file:
                     failed_writer = csv.writer(failed_file)
                     for msg in FAILED_MESSAGES:
-                        failed_writer.writerow([msg])
+                        failed_writer.writerow([str(msg)])
                 FAILED_MESSAGES.clear()  # Prevent duplicate writes
         except Exception as e:
             logging.error(f"mllp_listener.py: Error writing to failed messages file: {e}")
@@ -154,8 +154,8 @@ class MllpListener:
             if PARSED_MESSAGES:
                 with open(parsed_file_path, 'a', newline='') as parsed_file:
                     parsed_writer = csv.writer(parsed_file)
-                    for msg in PARSED_MESSAGES:
-                        parsed_writer.writerow([msg])
+                    for msg in PARSED_MESSAGES:   
+                        parsed_writer.writerow([str(msg)])
                 PARSED_MESSAGES.clear()  # Prevent duplicate writes
         except Exception as e:
             logging.error(f"mllp_listener.py: Error writing to parsed messages file: {e}")
