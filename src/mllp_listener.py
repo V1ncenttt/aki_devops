@@ -73,14 +73,11 @@ class MllpListener:
             logging.error(f"mllp_listener.py: Directory {directory_path} does not exist. Message logging disabled.")
             self.can_log_messages = False  # Don't write logs if we can't find it 
         else:
+            logging.info(f"mllp_listener.py: Message logging enabled.")
             self.can_log_messages = True
             # Ensure the file exists, if it doesn't then we create it because the directory exists
             self.ensure_file_exists(failed_file_path, ["Message"])
             self.ensure_file_exists(parsed_file_path, ["Message"])
-
-        # This will create the file if it doesn't exist
-        self.ensure_file_exists(failed_file_path, ["Message"])
-        self.ensure_file_exists(parsed_file_path, ["Message"])
         
         self.open_connection()
     
@@ -166,8 +163,8 @@ class MllpListener:
             if PARSED_MESSAGES:
                 with open(parsed_file_path, 'a', newline='') as parsed_file:
                     parsed_writer = csv.writer(parsed_file)
-                    for msg in PARSED_MESSAGES:   
-                        parsed_writer.writerow([str(msg) + ','])
+                    for msg in PARSED_MESSAGES:
+                        parsed_writer.writerow(msg)
                 PARSED_MESSAGES.clear()  # Prevent duplicate writes
         except Exception as e:
             logging.error(f"mllp_listener.py: Error writing to parsed messages file: {e}")
@@ -204,7 +201,7 @@ class MllpListener:
                             return
 
                         HL7_MESSAGES_RECEIVED.inc()
-                        # PARSED_MESSAGES.append(hl7_message)
+                        # PARSED_MESSAGES.append(parsed_message)
                         
 
                         try:
