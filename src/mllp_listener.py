@@ -76,7 +76,7 @@ class MllpListener:
                 
                 logging.info(f"mllp_listener.py: [*] Connecting to HL7 Simulator at {mllp_host}:{mllp_port}...")
                 self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.client_socket.settimeout(10)
+                self.client_socket.settimeout(None)
                 self.client_socket.connect((mllp_host, mllp_port))
                 
                 logging.info("mllp_listener.py: [+] Connected to HL7 Simulator!")
