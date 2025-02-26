@@ -125,6 +125,7 @@ class MySQLDatabase(Database):
         """
         try:
             #existing_patient = self.session.query(Patient).filter_by(mrn=mrn).first()
+            logging.info(f"mysql_database.py: Adding patient with MRN {mrn}...")
             stmt = insert(Patient).values(mrn=mrn, age=age, sex=sex)
             stmt = stmt.on_duplicate_key_update(
                 age=stmt.inserted.age,
