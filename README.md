@@ -81,6 +81,10 @@ Libraries used:
 - pandas: Python package for working with dataframes. Highly used and updated. (Risk Level: LOW)
 - requests: Python package for making HTTP requests in a simple and human-friendly way. Widely used for web scraping and interacting with APIs. Robust documentation and active maintenance by a community of contributors. (Risk Level: LOW)
 - xgboost: Python package for optimized distributed gradient boosting, commonly used for machine learning tasks that require efficient and scalable algorithms. Regularly maintained with a strong focus on performance and accuracy in predictive modeling. (Risk Level: LOW)
+- prometheus_client: Python client for Prometheus, used for collecting and exposing application metrics. Actively maintained and widely adopted in monitoring and observability. (Risk Level: LOW)
+- pymysql: Python package for interacting with MySQL databases using a pure-Python implementation. Well-maintained and commonly used in database-driven applications. (Risk Level: LOW)
+- sqlalchemy: SQL toolkit and Object Relational Mapper for Python, enabling database interaction using high-level Python code. Popular, well-documented, and actively maintained. (Risk Level: LOW)
+- cryptography: Python package providing cryptographic recipes and primitives for secure communications. Actively maintained and widely used in security-sensitive applications. (Risk Level: LOW)
 
 ### Installing
 
