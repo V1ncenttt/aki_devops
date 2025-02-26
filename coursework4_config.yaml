@@ -55,14 +55,6 @@ spec:
             value: "password"
         ports:
           - containerPort: 3306
-        readinessProbe:
-            exec:
-              command:
-                - "mysqladmin"
-                - "ping"
-                - "--silent"
-            initialDelaySeconds: 10  # Wait 10 seconds before starting readiness check
-            periodSeconds: 5  # Check every 5 seconds
         volumeMounts:
           - name: mysql-storage
             mountPath: /var/lib/mysql
