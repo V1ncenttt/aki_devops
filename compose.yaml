@@ -56,6 +56,7 @@ services:
       driver: "local"
     volumes:
       - ./logs:/var/log
+      - ./aki-state:/aki-system/state
     ports:
       - "8000:8000"  # Expose metrics for Prometheus
 

@@ -32,6 +32,11 @@ from src.metrics import HL7_MESSAGES_RECEIVED, INCORRECT_MESSAGES_RECEIVED, MLLP
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
+# File paths
+failed_file_path = "/aki-system/state/failed_messages.csv"
+parsed_file_path = "/aki-system/state/parsed_messages.csv"
+
+
 class MllpListener:
     """
     MLLP Listener for HL7 Messages
@@ -61,8 +66,25 @@ class MllpListener:
         self.data_operator = data_operator
         self.client_socket = None
         self.running = True  # Track listener state
+        
+        # Ensure storage directory and files exist
+        # This will create the file if it doesn't exist
+        self.ensure_file_exists(failed_file_path, ["Message"])
+        self.ensure_file_exists(parsed_file_path, ["Message"])
+        
         self.open_connection()
     
+    def ensure_file_exists(self, file_path, headers):
+        """ Creates a CSV file with headers if it doesn't exist. """
+        # Ensure directory exists
+        # Ensure directory exists (important!)
+        os.makedirs('/aki-system/state', exist_ok=True)
+
+        if not os.path.exists(file_path):
+            with open(file_path, 'w', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(headers)  # Write headers only if file is newly created
+
     def open_connection(self):
         """
         Establishes a connection to the HL7 simulator via MLLP.
@@ -112,7 +134,33 @@ class MllpListener:
             logging.error(f"mllp_listener.py: Failed to send ACK: {e}")
         logging.info("mllp_listener.py: [ACK SENT]")
         return
+    
+    
+    def record_messages(self):
+        """ 
+        Writes failed and parsed messages to respective CSV files.
+        """
+        try:
+            if FAILED_MESSAGES:
+                with open(failed_file_path, 'a', newline='') as failed_file:
+                    failed_writer = csv.writer(failed_file)
+                    for msg in FAILED_MESSAGES:
+                        failed_writer.writerow([msg])
+                FAILED_MESSAGES.clear()  # Prevent duplicate writes
+        except Exception as e:
+            logging.error(f"mllp_listener.py: Error writing to failed messages file: {e}")
 
+        try:
+            if PARSED_MESSAGES:
+                with open(parsed_file_path, 'a', newline='') as parsed_file:
+                    parsed_writer = csv.writer(parsed_file)
+                    for msg in PARSED_MESSAGES:
+                        parsed_writer.writerow([msg])
+                PARSED_MESSAGES.clear()  # Prevent duplicate writes
+        except Exception as e:
+            logging.error(f"mllp_listener.py: Error writing to parsed messages file: {e}")
+
+    
     def run(self):
         """
         Listens for HL7 messages, processes them, and sends an acknowledgment (ACK).
@@ -144,7 +192,8 @@ class MllpListener:
                             return
 
                         HL7_MESSAGES_RECEIVED.inc()
-                        #PARSED_MESSAGES.append(hl7_message)
+                        PARSED_MESSAGES.append(hl7_message)
+                        FAILED_MESSAGES.append('alisoncheck')
 
                         try:
                             logging.info("mllp_listener.py: Forwarding hl7 message to data operator")
@@ -154,16 +203,13 @@ class MllpListener:
                                 self.send_ack(hl7_message)
                             else:
                                 logging.error(f"mllp_listener.py: Error processing message:\n{hl7_message}")
-                                #FAILED_MESSAGES.append(hl7_message)
+                                FAILED_MESSAGES.append(hl7_message)
                             
-                            # keep these in for now, see how to read from kubernetes then change accordingly
-                            #if True:
-                            #    with open('/aki-system/state/parsed_messages.csv', 'w') as parsed_file:
-                            #        parsed_writer = csv.writer(parsed_file)
-                            #        parsed_writer.writerows(PARSED_MESSAGES)
-                            #    with open('/aki-system/state/failed_messages.csv', 'w') as failed_file:
-                            #        failed_writer = csv.writer(failed_file)
-                            #        failed_writer.writerows(FAILED_MESSAGES)
+                            
+                            
+                            # CHECK the file path for kubernetes 
+                            # This calls function to record all messages
+                            self.record_messages()
 
                         except Exception as e:
                             logging.error(f"mllp_listener.py: Error {e}")
