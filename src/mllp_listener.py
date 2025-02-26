@@ -71,7 +71,7 @@ class MllpListener:
         # Ensure directory exists (only log, if it doesn't we DO NOT create it)
         if not os.path.isdir(directory_path):
             logging.error(f"mllp_listener.py: Directory {directory_path} does not exist. Message logging disabled.")
-            self.can_log_messages = True  # Don't write logs if we can't find it 
+            self.can_log_messages = False  # Don't write logs if we can't find it 
         else:
             self.can_log_messages = True
             # Ensure the file exists, if it doesn't then we create it because the directory exists
@@ -151,6 +151,7 @@ class MllpListener:
         Writes failed and parsed messages to respective CSV files.
         """
         if not self.can_log_messages:
+            logging.warning(f"can_log_messages set to False")
             return # We cannot properly log messages 
         try:
             if FAILED_MESSAGES:
@@ -161,7 +162,6 @@ class MllpListener:
                 FAILED_MESSAGES.clear() # Prevent duplicate writes
         except Exception as e:
             logging.error(f"mllp_listener.py: Error writing to failed messages file: {e}")
-
         try:
             if PARSED_MESSAGES:
                 with open(parsed_file_path, 'a', newline='') as parsed_file:
@@ -204,8 +204,8 @@ class MllpListener:
                             return
 
                         HL7_MESSAGES_RECEIVED.inc()
-                        PARSED_MESSAGES.append(hl7_message)
-                        FAILED_MESSAGES.append('alisoncheck')
+                        # PARSED_MESSAGES.append(hl7_message)
+                        
 
                         try:
                             logging.info("mllp_listener.py: Forwarding hl7 message to data operator")
@@ -215,13 +215,15 @@ class MllpListener:
                                 self.send_ack(hl7_message)
                             else:
                                 logging.error(f"mllp_listener.py: Error processing message:\n{hl7_message}")
-                                FAILED_MESSAGES.append(hl7_message)
+                                FAILED_MESSAGES.append(parsed_message)
                             
                             
                             # This calls function to record all messages
                             self.record_messages()
 
                         except Exception as e:
+                            FAILED_MESSAGES.append(parsed_message)
+                            self.record_messages()
                             logging.error(f"mllp_listener.py: Error {e}")
 
                         return
