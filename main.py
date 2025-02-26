@@ -97,7 +97,7 @@ def main():
     # ---------------------------------------------------- #
     while True:
         try:
-            logging.info("main.py: [*] Starting MLLP listener...")
+            #logging.info("main.py: [*] Starting MLLP listener...")
             mllp_listener.run()
         except Exception as e:
             logging.error(f"main.py: [ERROR] Exception occurred in MLLP listener: {e}")
