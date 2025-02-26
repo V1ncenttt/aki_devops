@@ -148,9 +148,11 @@ class DataOperator:
 
         if message[0] == "ORU^R01":
             BLOOD_TEST_RESULTS_RECEIVED.inc()
+            logging.info("data_operator.py: Logging ORU^R01 Message")
             status = self.process_oru_message(message) 
         elif message[0] == "ADT^A01":
             ADMITTED_PATIENT_MESSAGES.inc()
+            logging.info("data_operator.py: Logging ADT^A01 Message")
             status = self.process_adt_message(message) 
         elif message[0] == "ADT^A03":
             DISCHARGED_PATIENT_MESSAGES.inc()

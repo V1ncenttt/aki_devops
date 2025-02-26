@@ -146,6 +146,7 @@ class MllpListener:
                         PARSED_MESSAGES.append(hl7_message)
 
                         try:
+                            logging.info("mllp_listener.py: Forwarding hl7 message to data operator")
                             status = self.data_operator.process_message(parsed_message)
 
                             if status:
