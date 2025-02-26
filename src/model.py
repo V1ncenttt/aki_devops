@@ -164,7 +164,7 @@ class Model:
         Returns:
             tuple: (MRN, test_time) if AKI is detected, otherwise None.
         """
-        (mrn, test_time, patient_vector) = None#self.predict_queue.pop(0) 
+        (mrn, test_time, patient_vector) = None
         try:
             if self.predict_aki(patient_vector):
                 return (mrn, test_time)
@@ -180,7 +180,6 @@ if __name__=="__main__":
     dummy_queue = []
     model = Model(dummy_queue)
      
-    # EXTRACT GROUND TRUTH VALUES FROM TEST.CSV!!!!
     # Load test dataset
     df = pd.read_csv("test.csv")
     # Extract true AKI labels and convert 'y' to 1, 'n' to 0
@@ -196,8 +195,7 @@ if __name__=="__main__":
         prediction = model.predict_aki(row)
         predictions.append(prediction)
 
-    # Load saved labels without headers
-    #data = np.loadtxt('aki_labels.csv', delimiter=',', dtype=int)
+    
     print(f"1s: {sum(predictions)}, length:{len(predictions)}")
 
     # Compute F3 Score
