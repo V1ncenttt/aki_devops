@@ -108,9 +108,10 @@ class MllpListener:
         try:
             ack_message = self.parser.generate_hl7_ack(hl7_message)
             self.client_socket.sendall(ack_message)
-            logging.info("mllp_listener.py: [ACK SENT]")
         except Exception as e:
             logging.error(f"mllp_listener.py: Failed to send ACK: {e}")
+        logging.info("mllp_listener.py: [ACK SENT]")
+        return
 
     def run(self):
         """
@@ -156,17 +157,18 @@ class MllpListener:
                                 FAILED_MESSAGES.append(hl7_message)
                             
                             # keep these in for now, see how to read from kubernetes then change accordingly
-                            if True:
-                                parsed_writer = csv.writer('/aki-system/state/parsed_messages.csv')
-                                parsed_writer.writerows(PARSED_MESSAGES)
-                                failed_writer = csv.writer('/aki-system/state/failed_messages.csv')
-                                failed_writer.writerows(FAILED_MESSAGES)
-
-                            return
+                            #if True:
+                            #    with open('/aki-system/state/parsed_messages.csv', 'w') as parsed_file:
+                            #        parsed_writer = csv.writer(parsed_file)
+                            #        parsed_writer.writerows(PARSED_MESSAGES)
+                            #    with open('/aki-system/state/failed_messages.csv', 'w') as failed_file:
+                            #        failed_writer = csv.writer(failed_file)
+                            #        failed_writer.writerows(FAILED_MESSAGES)
 
                         except Exception as e:
-                            logging.error(f"mllp_listener.py: Data Operator error: {e}")
-                            return
+                            logging.error(f"mllp_listener.py: Error {e}")
+
+                        return
 
                 except socket.timeout:
                     logging.warning("mllp_listener.py: [-] Read timeout. Closing connection.")
