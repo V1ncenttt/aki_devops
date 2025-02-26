@@ -48,15 +48,19 @@ Our repository follows a modular structure, ensuring clear separation of core ap
 │   ├── pandas_database.py # Manages patient data with Pandas
 │   ├── parser.py          # Parses HL7 messages
 ├── test/                  # Unit tests for various system components
-├── .gitignore             # Specifies files and folders to be ignored by Git
-├── Dockerfile             # Docker configuration for the main system
+├── .gitlab-ci.yml         # GitLab CI/CD pipeline configuration
+├── Dockerfile             # Defines the Docker container for the system
 ├── README.md              # Project documentation
-├── aki_detection.joblib   # Pretrained AKI detection model
-├── compose.yaml           # Docker Compose configuration
+├── aki_detection.joblib   # Pretrained AKI detection model file
+├── compose.yaml           # Docker Compose configuration for orchestrating services
+├── coursework4_config.yaml# Kubernetes configuration for cloud deployment
 ├── main.py                # Entry point for running the system
-├── makefile               # Makefile for automating tasks
-├── requirements.txt       # Python dependencies
-├── run_tests.py           # Test runner for unit tests
+├── makefile               # Automates tasks like building, testing, and deploying
+├── mysql/.../.yaml        # Database configuration
+├── reinitialize.sh        # Script to reset or restart system components
+├── requirements.txt       # Lists required Python packages
+├── run_tests.py           # Runs unit tests across the system
+├── temp_config.yaml       # Temporary configuration file for testing
 ```
 
 
