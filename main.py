@@ -43,32 +43,9 @@ def main():
     mllp_address = os.getenv("MLLP_ADDRESS", "message-simulator:8440")
     pager_address = os.getenv("PAGER_ADDRESS", "message-simulator:8441")
 
-    # ---------------------------------------------------- #
-    # Initialization stage
-    # ---------------------------------------------------- #
-    # msg_queue = []#asyncio.Queue()
-    # parsed_queue = []#asyncio.Queue()
-    # predict_queue = []
-    # patient_data = {}
-
-    # database = MySQLDatabase(
-    # host=os.getenv("MYSQL_HOST", "db"),
-    # port=os.getenv("MYSQL_PORT", "3306"),
-    # user=os.getenv("MYSQL_USER", "user"),
-    # password=os.getenv("MYSQL_PASSWORD", "password"),
-    # db=os.getenv("MYSQL_DB", "hospital_db")
-    #     )
-    # database.connect()  # Ensure session is created
-
-
-    # # database = MySQLDatabase()
-    # mllp_listener = MllpListener(mllp_address, msg_queue)
-    # #TODO: Does the database get automatically filled when initialised? 
-    # data_operator = DataOperator(msg_queue, predict_queue, database)
-    # model = Model(predict_queue)
-    # initialize in reverse order so everything connects to the next module
+    
     parser = HL7Parser() 
-    # database = PandasDatabase('data/history.csv')
+    
     db_populator = DatabasePopulator(
         db=os.getenv("MYSQL_DB", "hospital_db"), 
         history_file="data/history.csv", #TODO: Change that when we use kubernetes (to the right folder!!!)
@@ -97,7 +74,7 @@ def main():
     # ---------------------------------------------------- #
     while True:
         try:
-            #logging.info("main.py: [*] Starting MLLP listener...")
+            
             mllp_listener.run()
         except Exception as e:
             logging.error(f"main.py: [ERROR] Exception occurred in MLLP listener: {e}")
