@@ -73,7 +73,6 @@ class DataOperator:
             return False
 
                 
-        # TODO: Check if this  is ok????
         # Convert `measurement_date` to UNIX timestamp for XGBoost compatibility
         if "measurement_date" in patient_vector.columns:
             patient_vector["measurement_date"] = patient_vector["measurement_date"].astype("int64") // 10**9
@@ -156,7 +155,7 @@ class DataOperator:
             status = self.process_adt_message(message) 
         elif message[0] == "ADT^A03":
             DISCHARGED_PATIENT_MESSAGES.inc()
-            status = True  # Placeholder, can be modified if needed
+            status = True  
         else:
             logging.error(f"data_operator.py: Unknown Message type {message}")
             raise ValueError(f"Unknown Message type {message}")
