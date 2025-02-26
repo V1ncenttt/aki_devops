@@ -42,8 +42,11 @@ Our repository follows a modular structure, ensuring clear separation of core ap
 │   ├── __init__.py        # Module initialization
 │   ├── data_operator.py   # Manages data processing and database updates
 │   ├── database.py        # Database handling
+│   ├── database_popul.py  # Database populator
+│   ├── metrics.py         # Metrics for Prometheus
 │   ├── mllp_listener.py   # Listens for HL7 messages over MLLP
 │   ├── model.py           # Predicts AKI from patient data
+│   ├── mysql_database.py  # Manages MySQL connections and queries
 │   ├── pager.py           # Sends alerts if AKI is detected
 │   ├── pandas_database.py # Manages patient data with Pandas
 │   ├── parser.py          # Parses HL7 messages
