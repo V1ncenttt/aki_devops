@@ -36,7 +36,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base #Safer, automatic sani
 from sqlalchemy.dialects.mysql import insert
 import pandas as pd
 from src.database import Database
-
+from pymysql.err import OperationalError
 Base = declarative_base()
 
 class Patient(Base):
@@ -95,7 +95,7 @@ class MySQLDatabase(Database):
             self.engine = create_engine(database_uri, echo=False)
             self.Session = sessionmaker(bind=self.engine)
             logging.info("mysql_database.py: MySQL database object created.")
-        except SQLAlchemyError as e:
+        except (SQLAlchemyError, OperationalError) as e:
             logging.error(f"mysql_database.py: Error initializing database connection: {e}")
 
 
@@ -106,13 +106,14 @@ class MySQLDatabase(Database):
         """
         attempt = 0
         while True:
+            logging.info(f"mysql_database.py: Connecting to MySQL database... (attempt {attempt + 1})")
             try:
                 self.session = self.Session()
                 # Check if connection is successful
                 self.session.execute(text("SELECT 1")) # Sample check query
                 logging.info("mysql_database.py: Connected to MySQL database.")
                 return
-            except SQLAlchemyError as e:
+            except (SQLAlchemyError, OperationalError) as e:
                 logging.error(f"mysql_database.py: Database connection failed (attempt {attempt + 1}): {e}")
                 attempt += 1
                 time.sleep(delay)
@@ -153,7 +154,7 @@ class MySQLDatabase(Database):
                 succeded = True
                 return True
             
-            except SQLAlchemyError as e:
+            except (SQLAlchemyError, OperationalError) as e:
                 attempt += 1
                 self.session.rollback()
                 logging.error(f"mysql_database.py: Error adding patient: {e}")
@@ -190,7 +191,7 @@ class MySQLDatabase(Database):
                 succeded = True # Might be used for stats
                 return True
             
-            except SQLAlchemyError as e:
+            except (SQLAlchemyError, OperationalError) as e:
                 attempt += 1
                 self.session.rollback()
                 logging.error(f"mysql_database.py: Error adding measurement: {e}")
@@ -254,7 +255,7 @@ class MySQLDatabase(Database):
                 succeded = True
                 return feature_df
 
-            except SQLAlchemyError as e:
+            except (SQLAlchemyError, OperationalError) as e:
                 attempt += 1
                 logging.error(f"Error retrieving data for MRN {mrn}: {e}")
                 self.connect()
