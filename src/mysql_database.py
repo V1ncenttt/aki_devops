@@ -30,7 +30,7 @@ Authors:
 from datetime import datetime, timezone
 import time
 import logging
-from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, ForeignKey, Enum
+from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, ForeignKey, Enum, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker, declarative_base #Safer, automatic sanitizing
 from sqlalchemy.dialects.mysql import insert
@@ -108,6 +108,8 @@ class MySQLDatabase(Database):
         while True:
             try:
                 self.session = self.Session()
+                # Check if connection is successful
+                self.session.execute(text("SELECT 1")) # Sample check query
                 logging.info("mysql_database.py: Connected to MySQL database.")
                 return
             except SQLAlchemyError as e:
