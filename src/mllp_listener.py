@@ -33,8 +33,9 @@ from src.metrics import HL7_MESSAGES_RECEIVED, INCORRECT_MESSAGES_RECEIVED, MLLP
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # File paths
-failed_file_path = "/aki-system/state/failed_messages.csv"
-parsed_file_path = "/aki-system/state/parsed_messages.csv"
+directory_path = "/aki-system/state"
+failed_file_path = os.path.join(directory_path, "failed_messages.csv")
+parsed_file_path = os.path.join(directory_path, "parsed_messages.csv")
 
 
 class MllpListener:
@@ -67,7 +68,16 @@ class MllpListener:
         self.client_socket = None
         self.running = True  # Track listener state
         
-        # Ensure storage directory and files exist
+        # Ensure directory exists (only log, if it doesn't we DO NOT create it)
+        if not os.path.isdir(directory_path):
+            logging.error(f"mllp_listener.py: Directory {directory_path} does not exist. Message logging disabled.")
+            self.can_log_messages = True  # Don't write logs if we can't find it 
+        else:
+            self.can_log_messages = True
+            # Ensure the file exists, if it doesn't then we create it because the directory exists
+            self.ensure_file_exists(failed_file_path, ["Message"])
+            self.ensure_file_exists(parsed_file_path, ["Message"])
+
         # This will create the file if it doesn't exist
         self.ensure_file_exists(failed_file_path, ["Message"])
         self.ensure_file_exists(parsed_file_path, ["Message"])
@@ -75,15 +85,15 @@ class MllpListener:
         self.open_connection()
     
     def ensure_file_exists(self, file_path, headers):
-        """ Creates a CSV file with headers if it doesn't exist. """
-        # Ensure directory exists
-        # Ensure directory exists (important!)
-        os.makedirs('/aki-system/state', exist_ok=True)
-
-        if not os.path.exists(file_path):
-            with open(file_path, 'w', newline='') as file:
-                writer = csv.writer(file)
-                writer.writerow(headers)  # Write headers only if file is newly created
+        """ Creates a CSV file with headers if it doesn't exist... Contigent on the directory existing """
+        try:
+            # If the file doesn't exist, create it with headers
+            if not os.path.exists(file_path):
+                with open(file_path, 'w', newline='') as file:
+                    writer = csv.writer(file)
+                    writer.writerow(headers)  # Write headers only if file is newly created
+        except Exception as e:
+            logging.error(f"mllp_listener.py: Error ensuring file {file_path} exists: {e}")
 
     def open_connection(self):
         """
@@ -140,13 +150,15 @@ class MllpListener:
         """ 
         Writes failed and parsed messages to respective CSV files.
         """
+        if not self.can_log_messages:
+            return # We cannot properly log messages 
         try:
             if FAILED_MESSAGES:
                 with open(failed_file_path, 'a', newline='') as failed_file:
                     failed_writer = csv.writer(failed_file)
                     for msg in FAILED_MESSAGES:
-                        failed_writer.writerow([str(msg)])
-                FAILED_MESSAGES.clear()  # Prevent duplicate writes
+                        failed_writer.writerow([str(msg) + ','])
+                FAILED_MESSAGES.clear() # Prevent duplicate writes
         except Exception as e:
             logging.error(f"mllp_listener.py: Error writing to failed messages file: {e}")
 
@@ -155,7 +167,7 @@ class MllpListener:
                 with open(parsed_file_path, 'a', newline='') as parsed_file:
                     parsed_writer = csv.writer(parsed_file)
                     for msg in PARSED_MESSAGES:   
-                        parsed_writer.writerow([str(msg)])
+                        parsed_writer.writerow([str(msg) + ','])
                 PARSED_MESSAGES.clear()  # Prevent duplicate writes
         except Exception as e:
             logging.error(f"mllp_listener.py: Error writing to parsed messages file: {e}")
@@ -206,8 +218,6 @@ class MllpListener:
                                 FAILED_MESSAGES.append(hl7_message)
                             
                             
-                            
-                            # CHECK the file path for kubernetes 
                             # This calls function to record all messages
                             self.record_messages()
 
