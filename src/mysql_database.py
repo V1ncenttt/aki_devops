@@ -93,7 +93,6 @@ class MySQLDatabase(Database):
         try:
             self.engine = create_engine(database_uri, echo=False)
             self.Session = sessionmaker(bind=self.engine)
-            #logging.disable(logging.WARNING)
             logging.info("mysql_database.py: MySQL database object created.")
         except SQLAlchemyError as e:
             logging.error(f"mysql_database.py: Error initializing database connection: {e}")
@@ -124,7 +123,7 @@ class MySQLDatabase(Database):
             sex (str, optional): Gender of the patient ('M', 'F', 'Other').
         """
         try:
-            #existing_patient = self.session.query(Patient).filter_by(mrn=mrn).first()
+
             logging.info(f"mysql_database.py: Adding patient with MRN {mrn}...")
             stmt = insert(Patient).values(mrn=mrn, age=age, sex=sex)
             stmt = stmt.on_duplicate_key_update(
@@ -174,13 +173,6 @@ class MySQLDatabase(Database):
             DataFrame: DataFrame with columns ['creatinine_date', 'creatinine_result'] sorted by date.
         """
 
-        #NOTE: the return value of this should be a "patient vector" that gets passed to the predict queue with
-        # the other metrics as: self.predict_queue.append((mrn, test_time, patient_vector))
-        # flow is then to predict_aki --> preprocess --> process_features, so this needs to be the right
-        # format for model.process_features basically
-        #NOTE: I am returning this as a df right now bc that's what the model wants, but if you want to change this to be a tuple
-        # that's fine we just have to fix the model
-
 
         try:
             # Query both tables to get measurements and  patient info
@@ -199,13 +191,12 @@ class MySQLDatabase(Database):
             )
 
             # Convert results to DataFrame
-            # Convert to DataFrame
             df = pd.DataFrame(measurements, columns=['creatinine_date', 'creatinine_result'])
 
-            # Step 3: Ensure datetime format for processing
+            # Ensure datetime format for processing
             df['creatinine_date'] = pd.to_datetime(df['creatinine_date'], errors='coerce')
 
-            # Step 4: Convert to Feature Vector (Flatten)
+            # Convert to Feature Vector (Flatten)
             flattened_features = {
                 'age': age,
                 'sex': sex,
@@ -216,7 +207,7 @@ class MySQLDatabase(Database):
                 flattened_features[f'creatinine_date_{i}'] = row['creatinine_date']
                 flattened_features[f'creatinine_result_{i}'] = row['creatinine_result']
 
-            # Step 5: Convert to DataFrame (Single Row)
+            # Convert to DataFrame (Single Row)
             feature_df = pd.DataFrame([flattened_features])
 
             return feature_df
@@ -230,8 +221,6 @@ if __name__ == "__main__":
     #Reliability tests - Duplicate handling logic
     db = MySQLDatabase("localhost","3306","root","password","hospital_db")
     db.connect()
-    #print(db.get_data(100005546))
-    #TODO: Unit tests
     db.add_patient('12345', 22, 'M')
 
     db.get_data('12345')
