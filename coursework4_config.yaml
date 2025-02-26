@@ -58,6 +58,7 @@ spec:
         volumeMounts:
           - name: mysql-storage
             mountPath: /var/lib/mysql
+            subPath: mysql
           - name: init-sql
             mountPath: /docker-entrypoint-initdb.d/init.sql
             subPath: init.sql  # Mount the init.sql file from ConfigMap into the expected directory
