@@ -223,7 +223,7 @@ class MllpListener:
                             self.record_messages()
                             logging.error(f"mllp_listener.py: Error {e}")
 
-                        return
+                        #return #Might put it back in
 
                 except socket.timeout:
                     logging.warning("mllp_listener.py: [-] Read timeout. Closing connection.")
