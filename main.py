@@ -30,11 +30,7 @@ def main():
     """
     Main function that initializes and runs the HL7 message processing system.
     """
-    
-    time.sleep(60)
-    
-    
-    
+
     # Start Prometheus metrics server
     start_http_server(8000)  # Exposes metrics at http://localhost:8000/metrics
     SYSTEM_UPTIME.set(time.time())  # Set system start time

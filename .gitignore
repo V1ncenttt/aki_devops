@@ -5,3 +5,5 @@ coverage_html_report/*
 .DS_Store
 mlruns/*
 model/model_iterations/*
+aki-state/*
+logs/*

@@ -108,6 +108,10 @@ class MySQLDatabase(Database):
         while True:
             logging.info(f"mysql_database.py: Connecting to MySQL database... (attempt {attempt + 1})")
             try:
+                if hasattr(self, 'session') and self.session is not None:
+                    self.session.close()  # Close any existing session
+            
+                self.engine.dispose()  # Dispose of old connections
                 self.session = self.Session()
                 # Check if connection is successful
                 self.session.execute(text("SELECT 1")) # Sample check query
@@ -253,6 +257,7 @@ class MySQLDatabase(Database):
                 feature_df = pd.DataFrame([flattened_features])
 
                 succeded = True
+                logging.info(f"mysql_database.py: Retrieved data for MRN {mrn}.")
                 return feature_df
 
             except (SQLAlchemyError, OperationalError) as e:
