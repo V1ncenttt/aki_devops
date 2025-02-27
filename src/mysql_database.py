@@ -156,7 +156,7 @@ class MySQLDatabase(Database):
             
             except (SQLAlchemyError, OperationalError) as e:
                 attempt += 1
-                self.session.rollback()
+                #self.session.rollback()
                 logging.error(f"mysql_database.py: Error adding patient: {e}")
                 self.connect()
                 time.sleep(1)
@@ -193,7 +193,7 @@ class MySQLDatabase(Database):
             
             except (SQLAlchemyError, OperationalError) as e:
                 attempt += 1
-                self.session.rollback()
+                #self.session.rollback()
                 logging.error(f"mysql_database.py: Error adding measurement: {e}")
                 self.connect()
                 time.sleep(1)
