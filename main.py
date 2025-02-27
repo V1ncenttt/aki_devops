@@ -42,6 +42,15 @@ def main():
     
     parser = HL7Parser() 
     
+    database = MySQLDatabase(
+    host=os.getenv("MYSQL_HOST", "db"),
+    port=os.getenv("MYSQL_PORT", "3306"),
+    user=os.getenv("MYSQL_USER", "user"),
+    password=os.getenv("MYSQL_PASSWORD", "password"),
+    db=os.getenv("MYSQL_DB", "hospital_db")
+        )
+    database.connect()
+    
     db_populator = DatabasePopulator(
         db=os.getenv("MYSQL_DB", "hospital_db"), 
         history_file="data/history.csv", #TODO: Change that when we use kubernetes (to the right folder!!!)
@@ -52,14 +61,6 @@ def main():
         ) #TODO: Change that when we use kubernetes (to the right folder!!!)
     db_populator.populate()
     
-    database = MySQLDatabase(
-    host=os.getenv("MYSQL_HOST", "db"),
-    port=os.getenv("MYSQL_PORT", "3306"),
-    user=os.getenv("MYSQL_USER", "user"),
-    password=os.getenv("MYSQL_PASSWORD", "password"),
-    db=os.getenv("MYSQL_DB", "hospital_db")
-        )
-    database.connect()
     pager = Pager(pager_address)
     model = Model()
     data_operator = DataOperator(database, model, pager)
