@@ -127,6 +127,17 @@ class MllpListener:
         self.running = False
         exit()
 
+    def reconnect(self):
+        """
+        Reconnects to the HL7 simulator if the connection is lost.
+        """
+        logging.warning("mllp_listener.py: [-] Connection lost. Reconnecting...")
+        if self.client_socket:
+            self.client_socket.close()
+            
+        self.open_connection()
+        self.running = True
+        
     def send_ack(self, hl7_message):
         """
         Sends an acknowledgment (ACK) message for a successfully processed HL7 message.
@@ -207,14 +218,13 @@ class MllpListener:
                         try:
                             logging.info("mllp_listener.py: Forwarding hl7 message to data operator")
                             status = self.data_operator.process_message(parsed_message)
-
-                            if status:
+                            
+                            if status != 1: #TODO: Might change the logic here to more statuses
                                 self.send_ack(hl7_message)
                             else:
                                 logging.error(f"mllp_listener.py: Error processing message:\n{hl7_message}")
                                 FAILED_MESSAGES.append(parsed_message)
-                            
-                            
+                                return status
                             # This calls function to record all messages
                             self.record_messages()
 

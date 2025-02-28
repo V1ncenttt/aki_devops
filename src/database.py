@@ -39,7 +39,18 @@ from abc import ABC, abstractmethod
 class Database(ABC):
     def __init__(self) -> None:
         pass
+    
+    @abstractmethod
+    def connect(self, delay, max_attempts) -> None:
+        """_summary_
+        Connects to the database.
 
+        Raises:
+            NotImplementedError: This is an abstract method,
+            and should be implemented by a subclass
+        """
+        raise NotImplementedError
+    
     @abstractmethod
     def get_data(self, mrn):
         """_summary_

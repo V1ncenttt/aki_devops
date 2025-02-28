@@ -65,14 +65,19 @@ def main():
     model = Model()
     data_operator = DataOperator(database, model, pager)
     mllp_listener = MllpListener(mllp_address, parser, data_operator)
-
+    status = 0
     # ---------------------------------------------------- #
     # Running the system
     # ---------------------------------------------------- #
     while True:
         try:
             
-            mllp_listener.run()
+            status = mllp_listener.run()
+            if status == 1:
+                logging.error(f"main.py: [ERROR] Database error occurred. Restarting MLLP listener when the database is available...")
+                database.connect(delay=3)
+                mllp_listener.open_connection()
+                
         except Exception as e:
             logging.error(f"main.py: [ERROR] Exception occurred in MLLP listener: {e}")
             logging.info("main.py: [*] Restarting MLLP listener in 5 seconds...")
@@ -81,7 +86,7 @@ def main():
     # ---------------------------------------------------- #
     # Shutdown stage
     # ---------------------------------------------------- #
-    mllp_listener.shutdown()
+    mllp_listener.shutdown() #This will never trigger
 
 
 if __name__ == "__main__":
