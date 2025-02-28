@@ -27,7 +27,7 @@ import socket
 import time
 import signal
 from src.parser import HL7Parser, START_BLOCK, END_BLOCK
-from src.data_operator import DataOperator
+from src.data_operator import DataOperator, QueryStatus
 from src.metrics import HL7_MESSAGES_RECEIVED, INCORRECT_MESSAGES_RECEIVED, MLLP_RECONNECTIONS, MLLP_SHUTDOWNS, FAILED_MESSAGES, PARSED_MESSAGES
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -219,7 +219,7 @@ class MllpListener:
                             logging.info("mllp_listener.py: Forwarding hl7 message to data operator")
                             status = self.data_operator.process_message(parsed_message)
                             
-                            if status != 1: #TODO: Might change the logic here to more statuses
+                            if status != QueryStatus.DB_DISCONNECTED: #TODO: Might change the logic here to more statuses
                                 self.send_ack(hl7_message)
                             else:
                                 logging.error(f"mllp_listener.py: Error processing message:\n{hl7_message}")
