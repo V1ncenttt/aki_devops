@@ -33,7 +33,7 @@ from src.metrics import HL7_MESSAGES_RECEIVED, AKI_PAGES_SENT, AKI_PAGES_FAILED,
 from src.pandas_database import PandasDatabase
 from src.mllp_listener import MllpListener
 from src.model import Model
-from src.data_operator import DataOperator
+from src.data_operator import DataOperator, QueryStatus
 from src.pager import Pager
 from src.mysql_database import MySQLDatabase
 from src.parser import HL7Parser
@@ -90,7 +90,7 @@ def main():
         try:
             
             status = mllp_listener.run()
-            if status == 1:
+            if status == QueryStatus.DB_DISCONNECTED:
                 logging.error(f"main.py: [ERROR] Database error occurred. Restarting MLLP listener when the database is available...")
                 database.connect(delay=3)
                 mllp_listener.open_connection()
