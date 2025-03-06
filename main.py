@@ -11,9 +11,23 @@ Run this script to start the system:
 
 """
 
+#!/usr/bin/env python3
+"""
+Main System Module
+==================
+This module initializes and runs the HL7 message processing system, handling message reception, parsing,
+prediction, and alerting mechanisms.
+
+Usage:
+------
+Run this script to start the system:
+    python main.py
+"""
+
 import os
 import time
 import logging
+import signal
 from prometheus_client import start_http_server
 from src.metrics import HL7_MESSAGES_RECEIVED, AKI_PAGES_SENT, AKI_PAGES_FAILED, PREDICTIONS_MADE, SYSTEM_UPTIME
 from src.pandas_database import PandasDatabase
@@ -24,7 +38,9 @@ from src.pager import Pager
 from src.mysql_database import MySQLDatabase
 from src.parser import HL7Parser
 from src.database_populator import DatabasePopulator
-import os
+
+# Setup logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 def main():
     """
@@ -35,12 +51,11 @@ def main():
     start_http_server(8000)  # Exposes metrics at http://localhost:8000/metrics
     SYSTEM_UPTIME.set(time.time())  # Set system start time
 
-    # Read environment variables for MLLP and pager ports
+    # Read environment variables for MLLP and pager addresses
     mllp_address = os.getenv("MLLP_ADDRESS", "message-simulator:8440")
     pager_address = os.getenv("PAGER_ADDRESS", "message-simulator:8441")
 
-    
-    parser = HL7Parser() 
+    parser = HL7Parser()
     
     database = MySQLDatabase(
     host=os.getenv("MYSQL_HOST", "db"),
@@ -53,17 +68,19 @@ def main():
     
     db_populator = DatabasePopulator(
         db=os.getenv("MYSQL_DB", "hospital_db"), 
-        history_file="data/history.csv", #TODO: Change that when we use kubernetes (to the right folder!!!)
+        history_file="data/history.csv",  # Adjust the file path as needed for Kubernetes
         user=os.getenv("MYSQL_USER", "user"), 
-        password= os.getenv("MYSQL_PASSWORD", "password"),
+        password=os.getenv("MYSQL_PASSWORD", "password"),
         host=os.getenv("MYSQL_HOST", "db"),
         port=os.getenv("MYSQL_PORT", "3306") 
-        ) #TODO: Change that when we use kubernetes (to the right folder!!!)
+    )
     db_populator.populate()
     
     pager = Pager(pager_address)
     model = Model()
     data_operator = DataOperator(database, model, pager)
+    
+    # Create the MLLP Listener instance
     mllp_listener = MllpListener(mllp_address, parser, data_operator)
     status = 0
     # ---------------------------------------------------- #
