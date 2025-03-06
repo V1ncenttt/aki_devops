@@ -22,7 +22,7 @@ Example:
     operator.run()
 
 """
-
+from enum import Enum
 import logging
 from src.database import Database
 from src.model import Model
@@ -31,7 +31,12 @@ from src.metrics import BLOOD_TEST_RESULTS_RECEIVED, PREDICTIONS_MADE, POSITIVE_
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-
+class QueryStatus(Enum):
+    SUCCESS = 0
+    DB_DISCONNECTED = 1
+    MODEL_ERROR = 2
+    UNKNOWN_MESSAGE_TYPE = 3
+    
 class DataOperator:
     """
     Data Operator for HL7 Message Processing
@@ -70,13 +75,13 @@ class DataOperator:
         
         if not status:
             logging.error(f"data_operator.py: Error adding measurement for patient {mrn}, database might be disconnected")
-            return 1
+            return QueryStatus.DB_DISCONNECTED
         
         status, patient_vector = self.database.get_data(mrn) # Pull all data, including new measurment
         
         if not status:
             logging.error(f"data_operator.py: Error getting data for patient {mrn}, database might be disconnected")
-            return 1
+            return QueryStatus.DB_DISCONNECTED
 
                 
         # Convert `measurement_date` to UNIX timestamp for XGBoost compatibility
@@ -91,13 +96,13 @@ class DataOperator:
         except Exception as e:
             logging.error(f"data_operator.py: Error from model.py\nException:\n{e}")
             PREDICTIONS_FAILED.inc()  # Track failed predictions
-            return 2 #Might need to have more statuses here, eg 0 for OK, 1 for db disconnected, 2 for model error, ...
+            return QueryStatus.MODEL_ERROR #Might need to have more statuses here, eg 0 for OK, 1 for db disconnected, 2 for model error, ...
         
         if positive_prediction:
             POSITIVE_PREDICTIONS_MADE.inc()
             self.pager.send_pager_alert(mrn, test_time)
 
-        return 0
+        return QueryStatus.SUCCESS
 
     def process_adt_message(self, message) -> int:  
         """
@@ -119,11 +124,11 @@ class DataOperator:
         status = self.database.add_patient(mrn, age, sex) #Might add more status types eg 0 for OK, 1 for db disconnected, ...
         if not status:
             logging.error(f"data_operator.py: Error adding patient {name} with MRN {mrn} to the database")
-            return 1
+            return QueryStatus.DB_DISCONNECTED
         
         logging.info(f"data_operator.py: Patient {name} with MRN {mrn} added to the database")
 
-        return 0
+        return QueryStatus.SUCCESS
 
     def process_oru_message(self, message):
         """
@@ -165,9 +170,9 @@ class DataOperator:
             status = self.process_adt_message(message) 
         elif message[0] == "ADT^A03":
             DISCHARGED_PATIENT_MESSAGES.inc()
-            status = 0
+            status = QueryStatus.SUCCESS
         else:
             logging.error(f"data_operator.py: Unknown Message type {message}")
-            status = 3
+            status = QueryStatus.UNKNOWN_MESSAGE_TYPE
         
         return status  # Ensures `main.py` knows if prediction was successful and the type of error if not
