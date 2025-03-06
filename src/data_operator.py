@@ -22,7 +22,7 @@ Example:
     operator.run()
 
 """
-
+from enum import Enum
 import logging
 from src.database import Database
 from src.model import Model
@@ -31,7 +31,12 @@ from src.metrics import BLOOD_TEST_RESULTS_RECEIVED, PREDICTIONS_MADE, POSITIVE_
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-
+class QueryStatus(Enum):
+    SUCCESS = 0
+    DB_DISCONNECTED = 1
+    MODEL_ERROR = 2
+    UNKNOWN_MESSAGE_TYPE = 3
+    
 class DataOperator:
     """
     Data Operator for HL7 Message Processing
@@ -51,7 +56,7 @@ class DataOperator:
         self.model = model
         self.pager = pager
 
-    def process_patient(self, mrn, creatinine_value, test_time):
+    def process_patient(self, mrn, creatinine_value, test_time) -> int:
         """
         Processes patient data by retrieving past measurements and making AKI predictions.
 
@@ -61,16 +66,22 @@ class DataOperator:
             test_time (str): Timestamp of the test.
 
         Returns:
-            bool: True if prediction was successful, False otherwise.
+            int: Status code for the processing operation. 0 for success, 1 for database error, 2 for model error.
         """
         logging.info(f"data_operator.py: [WORKER] Processing Patient {mrn} at {test_time}...")
         
         # Measurment added first 
-        self.database.add_measurement(mrn, creatinine_value, test_time) 
+        status = self.database.add_measurement(mrn, creatinine_value, test_time) 
         
-        patient_vector = self.database.get_data(mrn) # Pull all data, including new measurment
-        if patient_vector is None:
-            return False
+        if not status:
+            logging.error(f"data_operator.py: Error adding measurement for patient {mrn}, database might be disconnected")
+            return QueryStatus.DB_DISCONNECTED
+        
+        status, patient_vector = self.database.get_data(mrn) # Pull all data, including new measurment
+        
+        if not status:
+            logging.error(f"data_operator.py: Error getting data for patient {mrn}, database might be disconnected")
+            return QueryStatus.DB_DISCONNECTED
 
                 
         # Convert `measurement_date` to UNIX timestamp for XGBoost compatibility
@@ -85,15 +96,15 @@ class DataOperator:
         except Exception as e:
             logging.error(f"data_operator.py: Error from model.py\nException:\n{e}")
             PREDICTIONS_FAILED.inc()  # Track failed predictions
-            return False
+            return QueryStatus.MODEL_ERROR #Might need to have more statuses here, eg 0 for OK, 1 for db disconnected, 2 for model error, ...
         
         if positive_prediction:
             POSITIVE_PREDICTIONS_MADE.inc()
             self.pager.send_pager_alert(mrn, test_time)
 
-        return True
+        return QueryStatus.SUCCESS
 
-    def process_adt_message(self, message):  
+    def process_adt_message(self, message) -> int:  
         """
         Processes an ADT (Admission, Discharge, Transfer) HL7 message 
         to update the patient database.
@@ -110,10 +121,14 @@ class DataOperator:
         sex = message[1]['sex']
 
 
-        self.database.add_patient(mrn, age, sex)
+        status = self.database.add_patient(mrn, age, sex) #Might add more status types eg 0 for OK, 1 for db disconnected, ...
+        if not status:
+            logging.error(f"data_operator.py: Error adding patient {name} with MRN {mrn} to the database")
+            return QueryStatus.DB_DISCONNECTED
+        
         logging.info(f"data_operator.py: Patient {name} with MRN {mrn} added to the database")
 
-        return True
+        return QueryStatus.SUCCESS
 
     def process_oru_message(self, message):
         """
@@ -134,7 +149,7 @@ class DataOperator:
         status = self.process_patient(mrn, creatinine_value, test_time)
         return status
 
-    def process_message(self, message):
+    def process_message(self, message) -> int:
         """
         Determines the type of HL7 message and processes it accordingly.
 
@@ -142,7 +157,7 @@ class DataOperator:
             message (tuple): Parsed HL7 message.
 
         Returns:
-            bool: True if a prediction was made, False otherwise.
+            int: Status code for the processing operation. 0 for success, 1 for database error, 2 for model error, 3 for unknown message type.
         """
 
         if message[0] == "ORU^R01":
@@ -155,9 +170,9 @@ class DataOperator:
             status = self.process_adt_message(message) 
         elif message[0] == "ADT^A03":
             DISCHARGED_PATIENT_MESSAGES.inc()
-            status = True  
+            status = QueryStatus.SUCCESS
         else:
             logging.error(f"data_operator.py: Unknown Message type {message}")
-            raise ValueError(f"Unknown Message type {message}")
+            status = QueryStatus.UNKNOWN_MESSAGE_TYPE
         
-        return status  # Ensures `main.py` knows if prediction was successful
+        return status  # Ensures `main.py` knows if prediction was successful and the type of error if not

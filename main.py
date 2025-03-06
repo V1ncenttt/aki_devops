@@ -33,7 +33,7 @@ from src.metrics import HL7_MESSAGES_RECEIVED, AKI_PAGES_SENT, AKI_PAGES_FAILED,
 from src.pandas_database import PandasDatabase
 from src.mllp_listener import MllpListener
 from src.model import Model
-from src.data_operator import DataOperator
+from src.data_operator import DataOperator, QueryStatus
 from src.pager import Pager
 from src.mysql_database import MySQLDatabase
 from src.parser import HL7Parser
@@ -46,9 +46,7 @@ def main():
     """
     Main function that initializes and runs the HL7 message processing system.
     """
-    # Wait for dependent services to start
-    time.sleep(60)
-    
+
     # Start Prometheus metrics server
     start_http_server(8000)  # Exposes metrics at http://localhost:8000/metrics
     SYSTEM_UPTIME.set(time.time())  # Set system start time
@@ -58,6 +56,15 @@ def main():
     pager_address = os.getenv("PAGER_ADDRESS", "message-simulator:8441")
 
     parser = HL7Parser()
+    
+    database = MySQLDatabase(
+    host=os.getenv("MYSQL_HOST", "db"),
+    port=os.getenv("MYSQL_PORT", "3306"),
+    user=os.getenv("MYSQL_USER", "user"),
+    password=os.getenv("MYSQL_PASSWORD", "password"),
+    db=os.getenv("MYSQL_DB", "hospital_db")
+        )
+    database.connect()
     
     db_populator = DatabasePopulator(
         db=os.getenv("MYSQL_DB", "hospital_db"), 
@@ -69,40 +76,35 @@ def main():
     )
     db_populator.populate()
     
-    database = MySQLDatabase(
-    host=os.getenv("MYSQL_HOST", "db"),
-    port=os.getenv("MYSQL_PORT", "3306"),
-    user=os.getenv("MYSQL_USER", "user"),
-    password=os.getenv("MYSQL_PASSWORD", "password"),
-    db=os.getenv("MYSQL_DB", "hospital_db")
-    )
-    database.connect()
-    
     pager = Pager(pager_address)
     model = Model()
     data_operator = DataOperator(database, model, pager)
     
     # Create the MLLP Listener instance
     mllp_listener = MllpListener(mllp_address, parser, data_operator)
+    status = 0
+    # ---------------------------------------------------- #
+    # Running the system
+    # ---------------------------------------------------- #
+    while True:
+        try:
+            
+            status = mllp_listener.run()
+            if status == QueryStatus.DB_DISCONNECTED:
+                logging.error(f"main.py: [ERROR] Database error occurred. Restarting MLLP listener when the database is available...")
+                database.connect(delay=3)
+                mllp_listener.open_connection()
+                
+        except Exception as e:
+            logging.error(f"main.py: [ERROR] Exception occurred in MLLP listener: {e}")
+            logging.info("main.py: [*] Restarting MLLP listener in 5 seconds...")
+            time.sleep(5)  # Wait before restarting
 
-    # Register signal handlers for graceful shutdown
-    def signal_handler(signum, frame):
-        logging.info(f"main.py: Received signal {signum}. Initiating graceful shutdown...")
-        mllp_listener.shutdown()
-    
-    signal.signal(signal.SIGINT, signal_handler)  # Handle Ctrl+C
-    signal.signal(signal.SIGTERM, signal_handler)  # Handle termination signals
+    # ---------------------------------------------------- #
+    # Shutdown stage
+    # ---------------------------------------------------- #
+    mllp_listener.shutdown() #This will never trigger
 
-    # Run the listener continuously until shutdown is triggered
-    try:
-        while mllp_listener.running:
-            mllp_listener.run()
-    except Exception as e:
-        logging.error(f"main.py: [ERROR] Exception occurred in MLLP listener: {e}")
-        logging.info("main.py: [*] Restarting MLLP listener in 5 seconds...")
-        time.sleep(5)
-    finally:
-        logging.info("main.py: Exiting main loop.")
-    
+
 if __name__ == "__main__":
     main()
